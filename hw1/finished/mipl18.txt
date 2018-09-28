@@ -1,0 +1,25 @@
+proglbl -> PROGRAM
+  TOKEN: PROGRAM	 LEXEME: program
+Traceback (most recent call last):
+  File "mipl.py", line 230, in <module>
+    main(sys.argv)
+  File "mipl.py", line 227, in main
+    tree = parser.prog()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 420, in prog
+    localctx.i = self.match(miplParser.IDENT)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/Parser.py", line 118, in match
+    t = self._errHandler.recoverInline(self)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorStrategy.py", line 392, in recoverInline
+    if self.singleTokenInsertion(recognizer):
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorStrategy.py", line 425, in singleTokenInsertion
+    self.reportMissingToken(recognizer)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorStrategy.py", line 333, in reportMissingToken
+    recognizer.notifyErrorListeners(msg, t, None)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/Parser.py", line 314, in notifyErrorListeners
+    listener.syntaxError(self, offendingToken, line, column, msg, e)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorListener.py", line 60, in syntaxError
+    delegate.syntaxError(recognizer, offendingSymbol, line, column, msg, e)
+  File "mipl.py", line 219, in syntaxError
+    raise Exception("SYNTAX ERROR ON LINE " + str(line) + "!!! \n" + " --> What the heck is '" +offendingSymbol.text + "' ?")
+Exception: SYNTAX ERROR ON LINE 5!!! 
+ --> What the heck is ';' ?

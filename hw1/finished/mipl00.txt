@@ -1,0 +1,748 @@
+proglbl -> PROGRAM
+  TOKEN: PROGRAM	 LEXEME: program
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: stuff
+identlist -> epsilon
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+idx -> intconst
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 20
+idx -> intconst
+idxrange -> idx DOTDOT idx
+  TOKEN: DOTDOT	 LEXEME: ..
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+array -> ARRAY LBRACKET idxrange RBRACKET OF simple
+  TOKEN: ARRAY	 LEXEME: array
+  TOKEN: LPAREN	 LEXEME: [
+  TOKEN: RPAREN	 LEXEME: ]
+  TOKEN: OF	 LEXEME: of
+typez -> array
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: data
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: max
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: i
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: loc
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+vardeclist -> epsilon
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardecpart -> VAR vardec SCOLON vardeclist
+  TOKEN: VAR	 LEXEME: var
+  TOKEN: SCOLON	 LEXEME: ;
+prochdr -> PROCEDURE IDENT SCOLON
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: i
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: n
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: flag
+identlist -> epsilon
+simple -> BOOLEAN
+  TOKEN: BOOLEAN	 LEXEME: boolean
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: one
+identlist -> epsilon
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+vardeclist -> epsilon
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardecpart -> VAR vardec SCOLON vardeclist
+  TOKEN: VAR	 LEXEME: var
+  TOKEN: SCOLON	 LEXEME: ;
+procdecpart -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+boolconst -> TRUE
+  TOKEN: TRUE	 LEXEME: true
+constant -> boolconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> GT
+  TOKEN: GT	 LEXEME: >
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+factor -> LPAREN expr RPAREN
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+multop -> AND
+  TOKEN: AND	 LEXEME: and
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+boolconst -> FALSE
+  TOKEN: FALSE	 LEXEME: false
+constant -> boolconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> LT
+  TOKEN: LT	 LEXEME: <
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+arrayvar -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+idxvar -> arrayvar LBRACKET expr RBRACKET
+variable -> idxvar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> GT
+  TOKEN: GT	 LEXEME: >
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+arrayvar -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multop -> MULT
+  TOKEN: MULT	 LEXEME: *
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+idxvar -> arrayvar LBRACKET expr RBRACKET
+variable -> idxvar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+procident -> IDENT
+  TOKEN: IDENT	 LEXEME: swap
+procstmt -> procident
+stmt -> procstmt
+condition -> IF expr THEN stmt
+  TOKEN: IF	 LEXEME: if
+  TOKEN: THEN	 LEXEME: then
+stmt -> condition
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multop -> MULT
+  TOKEN: MULT	 LEXEME: *
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmt -> compound
+whileloop -> WHILE expr DO stmt
+stmt -> whileloop
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addop -> MINUS
+  TOKEN: MINUS	 LEXEME: -
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+addoplist -> addop term addoplist
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmt -> compound
+whileloop -> WHILE expr DO stmt
+stmt -> whileloop
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmtpart -> compound
+block -> vardecpart procdecpart stmtpart
+procdec -> prochdr block
+procdecpart -> epsilon
+procdecpart -> procdec SCOLON procdecpart
+  TOKEN: SCOLON	 LEXEME: ;
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 0
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+inputvar -> variable
+inputlist -> epsilon
+read -> READ LPAREN inputvar inputlist RPAREN
+  TOKEN: READ	 LEXEME: read
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> read
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> GEQ
+  TOKEN: GEQ	 LEXEME: >=
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 0
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multop -> MULT
+  TOKEN: MULT	 LEXEME: *
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+arrayvar -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+idxvar -> arrayvar LBRACKET expr RBRACKET
+variable -> idxvar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+inputvar -> variable
+inputlist -> epsilon
+read -> READ LPAREN inputvar inputlist RPAREN
+  TOKEN: READ	 LEXEME: read
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> read
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmt -> compound
+whileloop -> WHILE expr DO stmt
+stmt -> whileloop
+procident -> IDENT
+  TOKEN: IDENT	 LEXEME: sort
+procstmt -> procident
+stmt -> procstmt
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+outputlist -> epsilon
+outputlist -> COMMA output outputlist
+  TOKEN: COMMA	 LEXEME: ,
+write -> WRITE LPAREN output outputlist RPAREN
+  TOKEN: WRITE	 LEXEME: write
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> write
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> LEQ
+  TOKEN: LEQ	 LEXEME: <=
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+arrayvar -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+idxvar -> arrayvar LBRACKET expr RBRACKET
+variable -> idxvar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+outputlist -> epsilon
+outputlist -> COMMA output outputlist
+  TOKEN: COMMA	 LEXEME: ,
+write -> WRITE LPAREN output outputlist RPAREN
+  TOKEN: WRITE	 LEXEME: write
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> write
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multop -> MULT
+  TOKEN: MULT	 LEXEME: *
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmt -> compound
+whileloop -> WHILE expr DO stmt
+stmt -> whileloop
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+inputvar -> variable
+inputlist -> epsilon
+read -> READ LPAREN inputvar inputlist RPAREN
+  TOKEN: READ	 LEXEME: read
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> read
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> MINUS
+  TOKEN: MINUS	 LEXEME: -
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addop -> PLUS
+  TOKEN: PLUS	 LEXEME: +
+sign -> PLUS
+  TOKEN: PLUS	 LEXEME: +
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addop -> MINUS
+  TOKEN: MINUS	 LEXEME: -
+sign -> MINUS
+  TOKEN: MINUS	 LEXEME: -
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multop -> MULT
+  TOKEN: MULT	 LEXEME: *
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 5
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+addoplist -> addop term addoplist
+addoplist -> addop term addoplist
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+constant -> CHARCONST
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+output -> expr
+outputlist -> epsilon
+outputlist -> COMMA output outputlist
+  TOKEN: COMMA	 LEXEME: ,
+outputlist -> COMMA output outputlist
+  TOKEN: COMMA	 LEXEME: ,
+outputlist -> COMMA output outputlist
+  TOKEN: COMMA	 LEXEME: ,
+write -> WRITE LPAREN output outputlist RPAREN
+  TOKEN: WRITE	 LEXEME: write
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+stmt -> write
+stmtlist -> epsilon
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+stmtlist -> SCOLON stmt stmtlist
+  TOKEN: SCOLON	 LEXEME: ;
+compound -> BEGIN stmt stmtlist END
+  TOKEN: BEGIN	 LEXEME: begin
+  TOKEN: END	 LEXEME: end
+stmtpart -> compound
+block -> vardecpart procdecpart stmtpart
+prog-> proglbl IDENT SCOLON block PERIOD
+  TOKEN: IDENT	 LEXEME: DiddleDeDum
+  TOKEN: SCOLON	 LEXEME: ;
+  TOKEN: PERIOD	 LEXEME: .

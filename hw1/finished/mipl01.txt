@@ -1,0 +1,11 @@
+proglbl -> PROGRAM
+  TOKEN: PROGRAM	 LEXEME: program
+vardecpart -> epsilon
+procdecpart -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1234567890123
+1234567890123 Error : integer overflow

@@ -1,0 +1,283 @@
+proglbl -> PROGRAM
+  TOKEN: PROGRAM	 LEXEME: program
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: stuff
+identlist -> epsilon
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+idx -> intconst
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 20
+idx -> intconst
+idxrange -> idx DOTDOT idx
+  TOKEN: DOTDOT	 LEXEME: ..
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+array -> ARRAY LBRACKET idxrange RBRACKET OF simple
+  TOKEN: ARRAY	 LEXEME: array
+  TOKEN: LPAREN	 LEXEME: [
+  TOKEN: RPAREN	 LEXEME: ]
+  TOKEN: OF	 LEXEME: of
+typez -> array
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: data
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: max
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: i
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: loc
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+vardeclist -> epsilon
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardecpart -> VAR vardec SCOLON vardeclist
+  TOKEN: VAR	 LEXEME: var
+  TOKEN: SCOLON	 LEXEME: ;
+prochdr -> PROCEDURE IDENT SCOLON
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: i
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: n
+identlist -> epsilon
+identlist -> COMMA ident identlist
+  TOKEN: COMMA	 LEXEME: ,
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: flag
+identlist -> epsilon
+simple -> BOOLEAN
+  TOKEN: BOOLEAN	 LEXEME: boolean
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+ident -> IDENT
+  TOKEN: IDENT	 LEXEME: one
+identlist -> epsilon
+simple -> INTEGER
+  TOKEN: INTEGER	 LEXEME: integer
+typez -> simple
+vardec -> ident identlist COLON typez
+  TOKEN: COLON	 LEXEME: :
+vardeclist -> epsilon
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardeclist -> vardec SCOLON vardeclist
+  TOKEN: SCOLON	 LEXEME: ;
+vardecpart -> VAR vardec SCOLON vardeclist
+  TOKEN: VAR	 LEXEME: var
+  TOKEN: SCOLON	 LEXEME: ;
+procdecpart -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+boolconst -> TRUE
+  TOKEN: TRUE	 LEXEME: true
+constant -> boolconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> GT
+  TOKEN: GT	 LEXEME: >
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+factor -> LPAREN expr RPAREN
+  TOKEN: LPAREN	 LEXEME: (
+  TOKEN: RPAREN	 LEXEME: )
+multop -> AND
+  TOKEN: AND	 LEXEME: and
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+multoplist -> multop factor multoplist
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+boolconst -> FALSE
+  TOKEN: FALSE	 LEXEME: false
+constant -> boolconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+sign -> epsilon
+intconst -> sign VALIDINT
+TOKEN: INTCONST	 LEXEME: 1
+constant -> intconst
+factor -> constant
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr
+assign -> variable ASSIGN expr
+  TOKEN: ASSIGN	 LEXEME: :=
+stmt -> assign
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+relop -> LT
+  TOKEN: LT	 LEXEME: <
+sign -> epsilon
+varident -> IDENT
+entirevar -> varident
+variable -> entirevar
+factor -> sign variable
+multoplist -> epsilon
+term -> factor multoplist
+addoplist -> epsilon
+simpleexpr -> term addoplist
+expr -> simpleexpr relop simpleexpr
+procident -> IDENT
+  TOKEN: IDENT	 LEXEME: fi
+procstmt -> procident
+stmt -> procstmt
+Traceback (most recent call last):
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1460, in stmtlist
+    raise NoViableAltException(self)
+antlr4.error.Errors.NoViableAltException: None
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "mipl.py", line 230, in <module>
+    main(sys.argv)
+  File "mipl.py", line 227, in main
+    tree = parser.prog()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 424, in prog
+    self.block()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 522, in block
+    self.procdecpart()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1182, in procdecpart
+    self.procdec()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1242, in procdec
+    self.block()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 524, in block
+    self.stmtpart()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1333, in stmtpart
+    self.compound()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1390, in compound
+    self.stmtlist()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1451, in stmtlist
+    self.stmtlist()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1449, in stmtlist
+    self.stmt()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1564, in stmt
+    self.whileloop()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 2215, in whileloop
+    self.stmt()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1571, in stmt
+    self.compound()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1390, in compound
+    self.stmtlist()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1451, in stmtlist
+    self.stmtlist()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1449, in stmtlist
+    self.stmt()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1564, in stmt
+    self.whileloop()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 2215, in whileloop
+    self.stmt()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1571, in stmt
+    self.compound()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1390, in compound
+    self.stmtlist()
+  File "/Users/ewillard/dev/school/cs5500/hw1/miplParser.py", line 1464, in stmtlist
+    self._errHandler.reportError(self, re)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorStrategy.py", line 124, in reportError
+    self.reportNoViableAlternative(recognizer, e)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorStrategy.py", line 250, in reportNoViableAlternative
+    recognizer.notifyErrorListeners(msg, e.offendingToken, e)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/Parser.py", line 314, in notifyErrorListeners
+    listener.syntaxError(self, offendingToken, line, column, msg, e)
+  File "/Users/ewillard/dev/school/cs5500/hw1/cs5500/lib/python3.6/site-packages/antlr4/error/ErrorListener.py", line 60, in syntaxError
+    delegate.syntaxError(recognizer, offendingSymbol, line, column, msg, e)
+  File "mipl.py", line 219, in syntaxError
+    raise Exception("SYNTAX ERROR ON LINE " + str(line) + "!!! \n" + " --> What the heck is '" +offendingSymbol.text + "' ?")
+Exception: SYNTAX ERROR ON LINE 25!!! 
+ --> What the heck is 'stuff' ?

@@ -21,6 +21,7 @@ std::string typeInfoOutput(TypeInfo typeInfo);
 bool checkSymbolTables(std::string ident);
 void printTokenInfo(const char* tokenType, const char* lexeme);
 void addToSymbolTable(std::string name, TypeInfo typeInfo);
+void assignTypeInfo(TypeInfo& t1, TypeInfo& t2);
 void beginScope();
 void endScope();
 
@@ -73,7 +74,9 @@ std::list<std::string> identList;
 
 %type<num> N_IDX N_INTCONST T_INTCONST T_INT N_ADDOP N_MULTOP
 %type<text> T_IDENT N_IDENT N_PROCIDENT N_SIGN T_PLUS T_MINUS
+%type<text> N_ARRAYVAR N_ENTIREVAR N_VARIDENT
 %type<typeInfo> N_SIMPLE N_TYPE N_ARRAY N_IDXRANGE 
+%type<typeInfo> N_VARIABLE N_TERM N_FACTOR N_CONST N_EXPR N_SIMPLEEXPR
 
 /*
  *  To eliminate ambiguities.
@@ -99,7 +102,7 @@ N_START         : N_PROG
                 ;
 N_ADDOP         : N_ADDOP_ARITH
                 {
-                    prRule("N_ADDOP", "N_ADDOP_ARITH";)
+                    prRule("N_ADDOP", "N_ADDOP_ARITH");
                     $$ = ARITHMETIC_OP;
                 }
                 | N_ADDOP_LOGIC
@@ -128,6 +131,15 @@ N_ADDOPLST      : /* epsilon */
                 | N_ADDOP N_TERM N_ADDOPLST
                 {
                     prRule("N_ADDOPLST", "N_ADDOP N_TERM N_ADDOPLST");
+                    if ($1 == ARITHMETIC_OP) {
+                        if ($2.type != INT) {
+                            yyerror("Expression must be of type integer");
+                        }
+                    } else if ($1  == LOGICAL_OP) {
+                        if ($2.type != BOOL) {
+                            yyerror("Expression must be of type boolean");
+                        }
+                    }
                 }
                 ;
 N_ARRAY         : T_ARRAY T_LBRACK N_IDXRANGE T_RBRACK T_OF N_SIMPLE
@@ -142,6 +154,7 @@ N_ARRAY         : T_ARRAY T_LBRACK N_IDXRANGE T_RBRACK T_OF N_SIMPLE
 N_ARRAYVAR      : N_ENTIREVAR
                 {
                     prRule("N_ARRAYVAR", "N_ENTIREVAR");
+                    $$ = $1;
                 }
                 ;
 N_ASSIGN        : N_VARIABLE T_ASSIGN N_EXPR
@@ -181,45 +194,76 @@ N_CONDITION     : T_IF N_EXPR T_THEN N_STMT
 N_CONST         : N_INTCONST
                 {
                     prRule("N_CONST", "N_INTCONST");
+                    $$.type = INT;
+                    $$.startIndex = NOT_APPLICABLE;
+                    $$.endIndex = NOT_APPLICABLE;
+                    $$.baseType = NOT_APPLICABLE;
                 }
                 | T_CHARCONST
                 {
                     prRule("N_CONST", "T_CHARCONST");
+                    $$.type = CHAR;
+                    $$.startIndex = NOT_APPLICABLE;
+                    $$.endIndex = NOT_APPLICABLE;
+                    $$.baseType = NOT_APPLICABLE;
                 }
                 | N_BOOLCONST
                 {
                     prRule("N_CONST", "N_BOOLCONST");
+                    $$.type = BOOL;
+                    $$.startIndex = NOT_APPLICABLE;
+                    $$.endIndex = NOT_APPLICABLE;
+                    $$.baseType = NOT_APPLICABLE;
                 }
                 ;
 N_ENTIREVAR     : N_VARIDENT
                 {
                     prRule("N_ENTIREVAR", "N_VARIDENT");
+                    $$ = $1;
                 }
                 ;
 N_EXPR          : N_SIMPLEEXPR
                 {
                     prRule("N_EXPR", "N_SIMPLEEXPR");
+                    $$ = $1;
                 }
                 | N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR
                 {
                     prRule("N_EXPR", "N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR");
+                    if ($1.type != $3.type) {
+                        yyerror("Expressions must be both integer, both char, or both boolean");
+                    }
+                    $$.type = BOOL;
+                    $$.startIndex = NOT_APPLICABLE;
+                    $$.endIndex = NOT_APPLICABLE;
+                    $$.baseType = NOT_APPLICABLE;
                 }
                 ;
 N_FACTOR        : N_SIGN N_VARIABLE
                 {
                     prRule("N_FACTOR", "N_SIGN N_VARIABLE");
+                    if (strcmp($1, "-") == 0 && $2.type != INT) {
+                        yyerror("Expression must be of type integer");
+                    }
+                    assignTypeInfo($$, $2);
                 }
                 | N_CONST
                 {
                     prRule("N_FACTOR", "N_CONST");
+                    assignTypeInfo($$, $1);
                 }
                 | T_LPAREN N_EXPR T_RPAREN
                 {
                     prRule("N_FACTOR", "T_LPAREN N_EXPR T_RPAREN");
+                    assignTypeInfo($$, $2);
                 }
                 | T_NOT N_FACTOR
                 {
                     prRule("N_FACTOR", "T_NOT N_FACTOR");
+                    if ($2.type != BOOL) {
+                        yyerror("Expression must be of type boolean");
+                    }
+                    assignTypeInfo($$, $2);
                 }
                 ;
 N_IDENT         : T_IDENT
@@ -247,6 +291,9 @@ N_IDX           : N_INTCONST
 N_IDXRANGE      : N_IDX T_DOTDOT N_IDX
                 {
                     prRule("N_IDXRANGE", "N_IDX T_DOTDOT N_IDX");
+                    if ($1 > $3) {
+                        yyerror("Start index must be less than or equal to end index");
+                    }
                     $$.type = NOT_APPLICABLE;
                     $$.startIndex = $1;
                     $$.endIndex = $3;
@@ -256,8 +303,12 @@ N_IDXRANGE      : N_IDX T_DOTDOT N_IDX
 N_IDXVAR        : N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK
                 {
                     prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK");
-                    if ($1.type != ARRAY) {
-                        yyerror()
+                    TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    if (info.type != ARRAY) {
+                        yyerror("Indexed variable must be of array type");
+                    }
+                    if ($3.type != INT) {
+                        yyerror("Index expression must be of type integer");
                     }
                 }
                 ;
@@ -292,7 +343,7 @@ N_MULTOP        : N_MULTOP_ARITH
                 }
                 | N_MULTOP_LOGIC
                 {
-                    prRule("N_MULTOP", "N_MULTOP_LOGIC")
+                    prRule("N_MULTOP", "N_MULTOP_LOGIC");
                     $$ = LOGICAL_OP;
                 }
                 ;
@@ -317,6 +368,15 @@ N_MULTOPLST     : /* epsilon */
                 | N_MULTOP N_FACTOR N_MULTOPLST
                 {
                     prRule("N_MULTOPLST", "N_MULTOP N_FACTOR N_MULTOPLST");
+                    if ($1 == ARITHMETIC_OP) {
+                        if ($2.type != INT) {
+                            yyerror("Expression must be of type integer");
+                        }
+                    } else if ($1  == LOGICAL_OP) {
+                        if ($2.type != BOOL) {
+                            yyerror("Expression must be of type boolean");
+                        }
+                    }
                 }
                 ;
 N_OUTPUT        : N_EXPR
@@ -464,6 +524,7 @@ N_SIMPLE        : T_INT
 N_SIMPLEEXPR    : N_TERM N_ADDOPLST
                 {
                     prRule("N_SIMPLEEXPR", "N_TERM N_ADDOPLST");
+                    assignTypeInfo($$, $1);
                 }
                 ;
 N_STMT          : N_ASSIGN
@@ -512,17 +573,18 @@ N_STMTPART      : N_COMPOUND
 N_TERM          : N_FACTOR N_MULTOPLST
                 {
                     prRule("N_TERM", "N_FACTOR N_MULTOPLST");
+                    assignTypeInfo($$, $1);
                 }
                 ;
 N_TYPE          : N_SIMPLE
                 {
                     prRule("N_TYPE", "N_SIMPLE");
-                    $$ = $1;
+                    assignTypeInfo($$, $1);
                 }
                 | N_ARRAY
                 {
                     prRule("N_TYPE", "N_ARRAY");
-                    $$ = $1;
+                    assignTypeInfo($$, $1);
                 }
                 ;
 N_VARDEC        : N_IDENT N_IDENTLST T_COLON N_TYPE
@@ -556,6 +618,8 @@ N_VARDECPART    : /* epsilon */
 N_VARIABLE      : N_ENTIREVAR
                 {
                     prRule("N_VARIABLE", "N_ENTIREVAR");
+                    TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    $$ = info;
                 }
                 | N_IDXVAR
                 {
@@ -568,11 +632,15 @@ N_VARIDENT      : T_IDENT
                     if (!checkSymbolTables($1)) {
                         yyerror("Undefined identifier");
                     }
+                    $$ = $1;
                 }
                 ;
 N_WHILE         : T_WHILE N_EXPR T_DO N_STMT
                 {
                     prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
+                    if ($2.type != BOOL) {
+                        yyerror("Expression must be of type boolean");
+                    }
                 }
                 ;
 N_WRITE         : T_WRITE T_LPAREN N_OUTPUT N_OUTPUTLST T_RPAREN
@@ -703,6 +771,13 @@ void addToSymbolTable(std::string name, TypeInfo typeInfo) {
 void printTokenInfo(const char* tokenType, const char* lexeme) {
   if (OUTPUT_TOKENS)
     printf("TOKEN: %-15s  LEXEME: %s\n", tokenType, lexeme);
+}
+
+void assignTypeInfo(TypeInfo& t1, TypeInfo& t2) {
+    t1.type = t2.type;
+    t1.startIndex = t2.startIndex;
+    t1.endIndex = t2.endIndex;
+    t1.baseType = t2.baseType;
 }
 
 int main() {

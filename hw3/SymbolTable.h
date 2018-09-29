@@ -17,13 +17,6 @@ struct TypeInfo {
     int startIndex;
     int endIndex;
     int baseType;
-    
-    TypeInfo& operator=(const TypeInfo& rhs) {
-        this->type = rhs.type;
-        this->startIndex = rhs.startIndex;
-        this->endIndex = rhs.endIndex;
-        this->baseType = rhs.baseType;
-    }
 };
 
 class SymbolTable {
@@ -50,7 +43,7 @@ public:
         std::unordered_map<std::string, TypeInfo>::iterator found;
         TypeInfo ret;
         if ((found = hashTable.find(name)) == hashTable.end()) {
-            ret = {NOT_APPLICABLE};
+            ret.type = NOT_APPLICABLE;
         } else {
             ret = found->second;
         }

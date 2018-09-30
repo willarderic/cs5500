@@ -13,6 +13,7 @@
 #include <cstring>
 #include <list>
 #include "SymbolTable.h"
+#include <iostream>
 
 void ignoreComment();
 int ckInt();
@@ -35,8 +36,12 @@ extern "C" {
 
 #define MAX_INT	"2147483647"
 
+// controls for various types of output
 #define OUTPUT_TOKENS 0
 #define OUTPUT_PRODUCTIONS 0
+#define OUTPUT_SCOPES 0
+#define OUTPUT_ADDSYMBOLS 0
+#define OUTPUT_ERRORS 1
 
 // constants for logical or arithmetic operators for type checking
 #define LOGICAL_OP 100
@@ -74,9 +79,9 @@ std::list<std::string> identList;
 
 %type<num> N_IDX N_INTCONST T_INTCONST T_INT N_ADDOP N_MULTOP
 %type<text> T_IDENT N_IDENT N_PROCIDENT N_SIGN T_PLUS T_MINUS
-%type<text> N_ARRAYVAR N_ENTIREVAR N_VARIDENT
-%type<typeInfo> N_SIMPLE N_TYPE N_ARRAY N_IDXRANGE 
-%type<typeInfo> N_VARIABLE N_TERM N_FACTOR N_CONST N_EXPR N_SIMPLEEXPR
+%type<text> N_ENTIREVAR N_VARIDENT N_ARRAYVAR
+%type<typeInfo> N_SIMPLE N_TYPE N_ARRAY N_IDXRANGE N_IDXVAR
+%type<typeInfo> N_VARIABLE N_TERM N_FACTOR N_CONST N_EXPR N_SIMPLEEXPR N_OUTPUT N_INPUTVAR
 
 /*
  *  To eliminate ambiguities.
@@ -135,8 +140,9 @@ N_ADDOPLST      : /* epsilon */
                         if ($2.type != INT) {
                             yyerror("Expression must be of type integer");
                         }
-                    } else if ($1  == LOGICAL_OP) {
+                    } else if ($1 == LOGICAL_OP) {
                         if ($2.type != BOOL) {
+                            std::cout << "ERIC4 " << $2.type << std::endl;
                             yyerror("Expression must be of type boolean");
                         }
                     }
@@ -154,11 +160,19 @@ N_ARRAY         : T_ARRAY T_LBRACK N_IDXRANGE T_RBRACK T_OF N_SIMPLE
 N_ARRAYVAR      : N_ENTIREVAR
                 {
                     prRule("N_ARRAYVAR", "N_ENTIREVAR");
-                    $$ = $1;
+                    $$ = $1;   
                 }
                 ;
 N_ASSIGN        : N_VARIABLE T_ASSIGN N_EXPR
                 {
+                    if ($1.type == ARRAY)
+                        yyerror("Cannot make assignment to an array");
+                    if ($1.type != $3.type)
+                    {
+                      if ($1.type == PROCEDURE || $3.type == PROCEDURE)
+                          yyerror("Procedure/variable mismatch");
+                      yyerror("Expression must be of same type as variable");
+                    }
                     prRule("N_ASSIGN", "N_VARIABLE T_ASSIGN N_EXPR");
                 }
                 ;
@@ -231,7 +245,7 @@ N_EXPR          : N_SIMPLEEXPR
                 {
                     prRule("N_EXPR", "N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR");
                     if ($1.type != $3.type) {
-                        yyerror("Expressions must be both integer, both char, or both boolean");
+                        yyerror("Expressions must both be int, or both char, or both boolean");
                     }
                     $$.type = BOOL;
                     $$.startIndex = NOT_APPLICABLE;
@@ -261,6 +275,7 @@ N_FACTOR        : N_SIGN N_VARIABLE
                 {
                     prRule("N_FACTOR", "T_NOT N_FACTOR");
                     if ($2.type != BOOL) {
+                        std::cout << "ERIC1 " << $2.type << std::endl;
                         yyerror("Expression must be of type boolean");
                     }
                     assignTypeInfo($$, $2);
@@ -292,7 +307,7 @@ N_IDXRANGE      : N_IDX T_DOTDOT N_IDX
                 {
                     prRule("N_IDXRANGE", "N_IDX T_DOTDOT N_IDX");
                     if ($1 > $3) {
-                        yyerror("Start index must be less than or equal to end index");
+                        yyerror("Start index must be less than or equal to end index of array");
                     }
                     $$.type = NOT_APPLICABLE;
                     $$.startIndex = $1;
@@ -303,13 +318,31 @@ N_IDXRANGE      : N_IDX T_DOTDOT N_IDX
 N_IDXVAR        : N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK
                 {
                     prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK");
-                    TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    //Have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an array was not able to be found)
+                    //TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+                    std::list<SymbolTable>::iterator it = scopeStack.begin();
+                    while (it != scopeStack.end() && info.type == NOT_FOUND) {
+                        info = it->findAndGetEntry(std::string($1));
+                        it ++;
+                    }
+                    if (info.type == NOT_FOUND) {
+                        yyerror("? shouldn't get here");
+                    }
                     if (info.type != ARRAY) {
+                        if (info.type == PROCEDURE)
+                            yyerror("Procedure/variable mismatch");
                         yyerror("Indexed variable must be of array type");
                     }
                     if ($3.type != INT) {
+                        if ($3.type == PROCEDURE)
+                            yyerror("Procedure/variable mismatch");
                         yyerror("Index expression must be of type integer");
                     }
+                    $$.type = info.baseType; // need to pass this to N_VARIABLE
+                    $$.startIndex = NOT_APPLICABLE;
+                    $$.endIndex = NOT_APPLICABLE;
+                    $$.baseType = NOT_APPLICABLE;
                 }
                 ;
 N_INPUTLST      : /* epsilon */
@@ -324,6 +357,7 @@ N_INPUTLST      : /* epsilon */
 N_INPUTVAR      : N_VARIABLE
                 {
                     prRule("N_INPUTVAR", "N_VARIABLE");
+                    $$ = $1;
                 }
                 ;
 N_INTCONST      : N_SIGN T_INTCONST
@@ -374,6 +408,7 @@ N_MULTOPLST     : /* epsilon */
                         }
                     } else if ($1  == LOGICAL_OP) {
                         if ($2.type != BOOL) {
+                            std::cout << "ERIC2 " << $2.type << std::endl;
                             yyerror("Expression must be of type boolean");
                         }
                     }
@@ -382,6 +417,7 @@ N_MULTOPLST     : /* epsilon */
 N_OUTPUT        : N_EXPR
                 {
                     prRule("N_OUTPUT", "N_EXPR");
+                    $$ = $1;
                 }
                 ;
 N_OUTPUTLST     : /* epsilon */
@@ -452,6 +488,8 @@ N_PROGLBL       : T_PROG
                 ;
 N_READ          : T_READ T_LPAREN N_INPUTVAR N_INPUTLST T_RPAREN
                 {
+                    if ($3.type != INT && $3.type != CHAR)
+                      yyerror("Input variable must be of type integer or char");
                     prRule("N_READ", "T_READ T_LPAREN N_INPUTVAR N_INPUTLST T_RPAREN");
                 }
                 ;
@@ -618,12 +656,23 @@ N_VARDECPART    : /* epsilon */
 N_VARIABLE      : N_ENTIREVAR
                 {
                     prRule("N_VARIABLE", "N_ENTIREVAR");
-                    TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    //Again, have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an integer couldn't be found)
+                    //TypeInfo info = scopeStack.front().findAndGetEntry(std::string($1));
+                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+                    std::list<SymbolTable>::iterator it = scopeStack.begin();
+                    while (it != scopeStack.end() && info.type == NOT_FOUND) {
+                        info = it->findAndGetEntry(std::string($1));
+                        it ++;
+                    }
+                    if (info.type == NOT_FOUND) {
+                        yyerror("? shouldn't get here 2");
+                    }
                     $$ = info;
                 }
                 | N_IDXVAR
                 {
                     prRule("N_VARIABLE", "N_IDXVAR");
+                    $$ = $1;
                 }
                 ;
 N_VARIDENT      : T_IDENT
@@ -639,12 +688,15 @@ N_WHILE         : T_WHILE N_EXPR T_DO N_STMT
                 {
                     prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
                     if ($2.type != BOOL) {
+                        std::cout << "ERIC3 " << $2.type << std::endl;
                         yyerror("Expression must be of type boolean");
                     }
                 }
                 ;
 N_WRITE         : T_WRITE T_LPAREN N_OUTPUT N_OUTPUTLST T_RPAREN
                 {
+                    if ($3.type != INT && $3.type != CHAR)
+                        yyerror("Output expression must be of type integer or char");
                     prRule("N_WRITE", "T_WRITE T_LPAREN N_OUTPUT N_OUTPUTLST T_RPAREN");
                 }
                 ;
@@ -661,7 +713,8 @@ void prRule(const char *lhs, const char *rhs) {
 }
 
 int yyerror(const char *s) {
-  printf("Line %d: %s\n", lineNum, s);
+  if (OUTPUT_ERRORS)
+    printf("Line %d: %s\n", lineNum, s);
   exit(1);
 }
 
@@ -742,12 +795,14 @@ std::string typeInfoOutput(TypeInfo typeInfo) {
 }
 
 void beginScope() {
-    printf("\n___Entering new scope...\n\n");
+    if (OUTPUT_SCOPES)
+      printf("\n___Entering new scope...\n\n");
     scopeStack.push_front(SymbolTable());
 }
 
 void endScope() {
-    printf("\n___Exiting scope...\n\n");
+    if (OUTPUT_SCOPES)
+      printf("\n___Exiting scope...\n\n");
     scopeStack.pop_front();
 }
 
@@ -762,7 +817,8 @@ bool checkSymbolTables(std::string ident) {
 }
 
 void addToSymbolTable(std::string name, TypeInfo typeInfo) {
-    printf("___Adding %s to symbol table with type %s\n", name.c_str(), typeInfoOutput(typeInfo).c_str());
+    if (OUTPUT_ADDSYMBOLS)
+        printf("___Adding %s to symbol table with type %s\n", name.c_str(), typeInfoOutput(typeInfo).c_str());
     if (!scopeStack.front().add(name, typeInfo)) {
         yyerror("Multiply defined identifier");
     }

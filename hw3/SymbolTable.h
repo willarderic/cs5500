@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 
+#define NOT_FOUND -2
 #define NOT_APPLICABLE -1
 #define INT 1
 #define BOOL 2
@@ -41,10 +42,9 @@ public:
 
     TypeInfo findAndGetEntry(std::string name) {
         std::unordered_map<std::string, TypeInfo>::iterator found;
-        TypeInfo ret;
-        if ((found = hashTable.find(name)) == hashTable.end()) {
-            ret.type = NOT_APPLICABLE;
-        } else {
+        TypeInfo ret = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+        found = hashTable.find(name);
+        if (found != hashTable.end()) {
             ret = found->second;
         }
         return ret;

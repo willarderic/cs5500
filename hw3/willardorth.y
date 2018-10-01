@@ -142,7 +142,6 @@ N_ADDOPLST      : /* epsilon */
                         }
                     } else if ($1 == LOGICAL_OP) {
                         if ($2.type != BOOL) {
-                            std::cout << "ERIC4 " << $2.type << std::endl;
                             yyerror("Expression must be of type boolean");
                         }
                     }
@@ -199,7 +198,7 @@ N_COMPOUND      : T_BEGIN N_STMT N_STMTLST T_END
 N_CONDITION     : T_IF N_EXPR T_THEN N_STMT
                 {
                     prRule("N_CONDITION", "T_IF N_EXPR T_THEN N_STMT");
-                }
+                } 
                 | T_IF N_EXPR T_THEN N_STMT T_ELSE N_STMT
                 {
                     prRule("N_CONDITION", "T_IF N_EXPR T_THEN N_STMT T_ELSE N_STMT");
@@ -275,7 +274,6 @@ N_FACTOR        : N_SIGN N_VARIABLE
                 {
                     prRule("N_FACTOR", "T_NOT N_FACTOR");
                     if ($2.type != BOOL) {
-                        std::cout << "ERIC1 " << $2.type << std::endl;
                         yyerror("Expression must be of type boolean");
                     }
                     assignTypeInfo($$, $2);
@@ -408,7 +406,6 @@ N_MULTOPLST     : /* epsilon */
                         }
                     } else if ($1  == LOGICAL_OP) {
                         if ($2.type != BOOL) {
-                            std::cout << "ERIC2 " << $2.type << std::endl;
                             yyerror("Expression must be of type boolean");
                         }
                     }
@@ -684,13 +681,15 @@ N_VARIDENT      : T_IDENT
                     $$ = $1;
                 }
                 ;
-N_WHILE         : T_WHILE N_EXPR T_DO N_STMT
+N_WHILE         : T_WHILE N_EXPR
                 {
-                    prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
                     if ($2.type != BOOL) {
-                        std::cout << "ERIC3 " << $2.type << std::endl;
                         yyerror("Expression must be of type boolean");
                     }
+                } 
+                T_DO N_STMT
+                {
+                    prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
                 }
                 ;
 N_WRITE         : T_WRITE T_LPAREN N_OUTPUT N_OUTPUTLST T_RPAREN

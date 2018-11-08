@@ -78,6 +78,10 @@ int globalsLabelNum, stackLabelNum, codeLabelNum, entryPointLabelNum;
 int blockLevel = 0;
 int offset = 0;
 
+// If statement
+stack<int> elseLabelNum, postConditionalLabelNum;
+// while statement label stacks
+stack<pair<int, int> > whileLabelPairs;
 %}
 
 %union {
@@ -205,19 +209,13 @@ N_ARRAYVAR      : N_ENTIREVAR
                     $$ = $1;   
                 }
                 ;
-N_ASSIGN        : N_VARIABLE
-                {
-                    stringstream ss;
-                    ss << $1.offset << ", " << "0";
-                    printOpCodeSingleAddr("la", getStr(ss));
-                }
-                T_ASSIGN N_EXPR
+N_ASSIGN        : N_VARIABLE T_ASSIGN N_EXPR
                 {
                     if ($1.type == ARRAY)
                         yyerror("Cannot make assignment to an array");
-                    if ($1.type != $4.type)
+                    if ($1.type != $3.type)
                     {
-                      if ($1.type == PROCEDURE || $4.type == PROCEDURE)
+                      if ($1.type == PROCEDURE || $3.type == PROCEDURE)
                           yyerror("Procedure/variable mismatch");
                       yyerror("Expression must be of same type as variable");
                     }
@@ -290,19 +288,46 @@ N_COMPOUND      : T_BEGIN
                     }
                 }
                 ;
-N_CONDITION     : T_IF N_EXPR N_THEN_PART
+N_CONDITION     : T_IF N_EXPR 
                 {
-                    prRule("N_CONDITION", "T_IF N_EXPR T_THEN N_STMT N_ELSE_PART");
-                    
+                    prRule("N_CONDITION", "T_IF N_EXPR");
+                    elseLabelNum.push(genLabelNum());
+                    stringstream ss;
+                    ss << "L." << elseLabelNum.top();
+                    printOpCodeSingleAddr("jf", getStr(ss));
+                }
+                N_THEN_PART
+                {
+                    prRule("N_CONDITION", "N_THEN_PART");
                 }
                 ;
 N_THEN_PART     : T_THEN N_STMT 
                 {
+                    prRule("N_CONDITION", "T_THEN N_STMT");
                     prRule("N_THEN_PART", "T_THEN N_STMT");
+                    postConditionalLabelNum.push(genLabelNum());
+                    stringstream ss;
+                    ss << "L." << postConditionalLabelNum.top();
+                    printOpCodeSingleAddr("jp", getStr(ss));
+                    printLabel(elseLabelNum.top());
+                    elseLabelNum.pop();
+                    printLabel(postConditionalLabelNum.top());
+                    postConditionalLabelNum.pop();
                 }
-                | T_THEN N_STMT T_ELSE N_STMT
+                | T_THEN N_STMT T_ELSE
+                {
+                    postConditionalLabelNum.push(genLabelNum());
+                    stringstream ss;
+                    ss << "L." << postConditionalLabelNum.top();
+                    printOpCodeSingleAddr("jp", getStr(ss));
+                    printLabel(elseLabelNum.top());
+                    elseLabelNum.pop();
+                }
+                N_STMT
                 {
                     prRule("N_THEN_PART", "T_THEN N_STMT T_ELSE N_STMT");
+                    printLabel(postConditionalLabelNum.top());
+                    postConditionalLabelNum.pop();
                 }
                 ;
 N_CONST         : N_INTCONST
@@ -389,9 +414,6 @@ N_FACTOR        : N_SIGN N_VARIABLE
                         yyerror("Expression must be of type integer");
                     }
                     assignTypeInfo($$, $2);
-                    stringstream ss;
-                    ss << $2.offset;
-                    printOpCodeDoubleAddr("la", getStr(ss), "0");
                     printOpCode("deref");
                     if (strcmp($1, "-") == 0) {
                         printOpCode("neg");
@@ -453,7 +475,22 @@ N_IDXRANGE      : N_IDX T_DOTDOT N_IDX
                     $$.baseType = NOT_APPLICABLE;
                 }
                 ;
-N_IDXVAR        : N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK
+N_IDXVAR        : N_ARRAYVAR T_LBRACK
+                {
+                    prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK");
+                   
+                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+                    list<SymbolTable>::iterator it = scopeStack.begin();
+                    while (it != scopeStack.end() && info.type == NOT_FOUND) {
+                        info = it->findAndGetEntry(string($1));
+                        it ++;
+                    }
+                    int c = info.offset - info.startIndex;
+                    stringstream ss;
+                    ss << c;
+                    printOpCodeDoubleAddr("la", getStr(ss), "0");
+                }
+                N_EXPR T_RBRACK
                 {
                     prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK");
                     //Have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an array was not able to be found)
@@ -472,15 +509,16 @@ N_IDXVAR        : N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK
                             yyerror("Procedure/variable mismatch");
                         yyerror("Indexed variable must be of array type");
                     }
-                    if ($3.type != INT) {
-                        if ($3.type == PROCEDURE)
-                            yyerror("Procedure/variable mismatch");
-                        yyerror("Index expression must be of type integer");
-                    }
                     $$.type = info.baseType; // need to pass this to N_VARIABLE
                     $$.startIndex = NOT_APPLICABLE;
                     $$.endIndex = NOT_APPLICABLE;
                     $$.baseType = NOT_APPLICABLE;
+                    if ($4.type != INT) {
+                        if ($4.type == PROCEDURE)
+                            yyerror("Procedure/variable mismatch");
+                        yyerror("Index expression must be of type integer");
+                    }
+                    printOpCode("add");
                 }
                 ;
 N_INPUTLST      : /* epsilon */
@@ -496,6 +534,15 @@ N_INPUTVAR      : N_VARIABLE
                 {
                     prRule("N_INPUTVAR", "N_VARIABLE");
                     $$ = $1;
+                    stringstream ss;
+                    ss << $1.offset;
+                    printOpCodeDoubleAddr("la", getStr(ss), "0");
+                    if ($1.type == INT) {
+                        printOpCode("iread");
+                    } else if ($1.type == CHAR) {
+                        printOpCode("cread");
+                    }
+                    printOpCode("st");
                 }
                 ;
 N_INTCONST      : N_SIGN T_INTCONST
@@ -873,6 +920,10 @@ N_VARIABLE      : N_ENTIREVAR
                         yyerror("? shouldn't get here 2");
                     }
                     $$ = info;
+
+                    stringstream ss;
+                    ss << info.offset << ", " << "0";
+                    printOpCodeSingleAddr("la", getStr(ss));
                 }
                 | N_IDXVAR
                 {
@@ -889,15 +940,28 @@ N_VARIDENT      : T_IDENT
                     $$ = $1;
                 }
                 ;
-N_WHILE         : T_WHILE N_EXPR
+N_WHILE         : T_WHILE 
                 {
-                    if ($2.type != BOOL) {
+                    whileLabelPairs.push(make_pair(genLabelNum(), genLabelNum()));
+                    printLabel(whileLabelPairs.top().first);
+                }
+                N_EXPR
+                {
+                    if ($3.type != BOOL) {
                         yyerror("Expression must be of type boolean");
                     }
-                } 
+                    stringstream ss;
+                    ss << "L." <<whileLabelPairs.top().second;
+                    printOpCodeSingleAddr("jf", getStr(ss));
+                }
                 T_DO N_STMT
                 {
                     prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
+                    stringstream ss;
+                    ss << "L." << whileLabelPairs.top().first;
+                    printOpCodeSingleAddr("jp", getStr(ss));
+                    printLabel(whileLabelPairs.top().second);
+                    whileLabelPairs.pop();
                 }
                 ;
 N_WRITE         : T_WRITE T_LPAREN N_OUTPUT N_OUTPUTLST T_RPAREN

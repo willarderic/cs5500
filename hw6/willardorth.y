@@ -36,6 +36,7 @@ void printOpCodeSingleAddr(string opCode, string addr);
 void printOpCodeDoubleAddr(string opCode, string addr1, string addr2);
 string getStr(stringstream& ss);
 TypeInfo getFromSymbolTables(string name);
+void nextOffset(const TypeInfo& info, int& offset);
 int yyerror(const char*);
 
 extern "C" {
@@ -55,7 +56,16 @@ extern "C" {
 
 // constants for logical or arithmetic operators for type checking
 #define LOGICAL_OP 100
-#define ARITHMETIC_OP 101
+#define MINUS_OP 101
+#define PLUS_OP 102
+#define MULT_OP 103
+#define DIV_OP 104
+#define EQ 105
+#define NE 106
+#define LT 107
+#define LE 108
+#define GT 109
+#define GE 110
 
 int lineNum = 1; // source line number
 int staticNestingLevel = 1;
@@ -66,6 +76,7 @@ list<string> identList;
 stack<pair<string, TypeInfo> > procStack;
 int globalsLabelNum, stackLabelNum, codeLabelNum, entryPointLabelNum;
 int blockLevel = 0;
+int offset = 0;
 
 %}
 
@@ -93,9 +104,9 @@ int blockLevel = 0;
 
 %token      ST_EOF
 
-%type<num> N_IDX N_INTCONST T_INTCONST T_INT N_ADDOP N_MULTOP
+%type<num> N_IDX N_INTCONST T_INTCONST T_INT N_ADDOP N_MULTOP N_ADDOP_ARITH N_MULTOP_ARITH N_RELOP
 %type<text> T_IDENT N_IDENT N_PROCIDENT N_SIGN T_PLUS T_MINUS
-%type<text> N_ENTIREVAR N_VARIDENT N_ARRAYVAR
+%type<text> N_ENTIREVAR N_VARIDENT N_ARRAYVAR T_CHARCONST
 %type<typeInfo> N_SIMPLE N_TYPE N_ARRAY N_IDXRANGE N_IDXVAR
 %type<typeInfo> N_VARIABLE N_TERM N_FACTOR N_CONST N_EXPR N_SIMPLEEXPR N_OUTPUT N_INPUTVAR
 
@@ -128,7 +139,7 @@ N_START         : N_PROG
 N_ADDOP         : N_ADDOP_ARITH
                 {
                     prRule("N_ADDOP", "N_ADDOP_ARITH");
-                    $$ = ARITHMETIC_OP;
+                    $$ = $1;
                 }
                 | N_ADDOP_LOGIC
                 {
@@ -138,10 +149,12 @@ N_ADDOP         : N_ADDOP_ARITH
 N_ADDOP_ARITH   : T_PLUS
                 {
                     prRule("N_ADDOP_ARITH", "T_PLUS");
+                    $$ = PLUS_OP;
                 }
                 | T_MINUS
                 {
                     prRule("N_ADDOP_ARITH", "T_MINUS");
+                    $$ = MINUS_OP;
                 }
                 ;
 N_ADDOP_LOGIC   : T_OR
@@ -153,10 +166,20 @@ N_ADDOPLST      : /* epsilon */
                 {
                     prRule("N_ADDOPLST", "epsilon");
                 }
-                | N_ADDOP N_TERM N_ADDOPLST
+                | N_ADDOP N_TERM 
+                {
+                    if ($1 == PLUS_OP) {
+                        printOpCode("add");
+                    } else if ($1 == MINUS_OP) {
+                        printOpCode("sub");
+                    } else if ($1 == LOGICAL_OP) {
+                        printOpCode("or");
+                    }
+                }
+                N_ADDOPLST
                 {
                     prRule("N_ADDOPLST", "N_ADDOP N_TERM N_ADDOPLST");
-                    if ($1 == ARITHMETIC_OP) {
+                    if ($1 == PLUS_OP || $1 == MINUS_OP) {
                         if ($2.type != INT) {
                             yyerror("Expression must be of type integer");
                         }
@@ -182,21 +205,29 @@ N_ARRAYVAR      : N_ENTIREVAR
                     $$ = $1;   
                 }
                 ;
-N_ASSIGN        : N_VARIABLE T_ASSIGN N_EXPR
+N_ASSIGN        : N_VARIABLE
+                {
+                    stringstream ss;
+                    ss << $1.offset << ", " << "0";
+                    printOpCodeSingleAddr("la", getStr(ss));
+                }
+                T_ASSIGN N_EXPR
                 {
                     if ($1.type == ARRAY)
                         yyerror("Cannot make assignment to an array");
-                    if ($1.type != $3.type)
+                    if ($1.type != $4.type)
                     {
-                      if ($1.type == PROCEDURE || $3.type == PROCEDURE)
+                      if ($1.type == PROCEDURE || $4.type == PROCEDURE)
                           yyerror("Procedure/variable mismatch");
                       yyerror("Expression must be of same type as variable");
                     }
-                    prRule("N_ASSIGN", "N_VARIABLE T_ASSIGN N_EXPR");
+                    prRule("N_ASSIGN", "N_VARIABLE T_ASSIGN N_EXPR");   
+                    printOpCode("st");
                 }
                 ;
 N_BLOCK         : N_VARDECPART
                 {
+                    offset = 0;
                     if (procStack.empty()) {
                         stringstream ss;
                         ss << (20 + scopeStack.front().frameSize());
@@ -210,11 +241,14 @@ N_BLOCK         : N_VARDECPART
                         scopeStack.push_front(front);
                     }
                 }
-                N_PROCDECPART N_STMTPART
+                N_PROCDECPART
                 {
-                    if (scopeStack.size() == 1) {
+                    if (procStack.empty()) {
                         printLabel(entryPointLabelNum);
                     }
+                }
+                N_STMTPART
+                {
                     prRule("N_BLOCK", "N_VARDECPART N_PROCDECPART N_STMTPART");
                     endScope();
 
@@ -223,10 +257,12 @@ N_BLOCK         : N_VARDECPART
 N_BOOLCONST     : T_TRUE
                 {
                     prRule("N_BOOLCONST", "T_TRUE");
+                    printOpCodeSingleAddr("lc", "1");
                 }
                 | T_FALSE
                 {
                     prRule("N_BOOLCONST", "T_FALSE");
+                    printOpCodeSingleAddr("lc", "0");
                 }
                 ;
 N_COMPOUND      : T_BEGIN 
@@ -257,6 +293,7 @@ N_COMPOUND      : T_BEGIN
 N_CONDITION     : T_IF N_EXPR N_THEN_PART
                 {
                     prRule("N_CONDITION", "T_IF N_EXPR T_THEN N_STMT N_ELSE_PART");
+                    
                 }
                 ;
 N_THEN_PART     : T_THEN N_STMT 
@@ -275,6 +312,9 @@ N_CONST         : N_INTCONST
                     $$.startIndex = NOT_APPLICABLE;
                     $$.endIndex = NOT_APPLICABLE;
                     $$.baseType = NOT_APPLICABLE;
+                    stringstream ss;
+                    ss << $1;
+                    printOpCodeSingleAddr("lc", getStr(ss));
                 }
                 | T_CHARCONST
                 {
@@ -283,6 +323,10 @@ N_CONST         : N_INTCONST
                     $$.startIndex = NOT_APPLICABLE;
                     $$.endIndex = NOT_APPLICABLE;
                     $$.baseType = NOT_APPLICABLE;
+                    int val = int($1[1]);
+                    stringstream ss;
+                    ss << val;
+                    printOpCodeSingleAddr("lc", getStr(ss));
                 }
                 | N_BOOLCONST
                 {
@@ -306,6 +350,7 @@ N_EXPR          : N_SIMPLEEXPR
                 }
                 | N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR
                 {
+
                     prRule("N_EXPR", "N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR");
                     if ($1.type != $3.type) {
                         yyerror("Expressions must both be int, or both char, or both boolean");
@@ -314,6 +359,27 @@ N_EXPR          : N_SIMPLEEXPR
                     $$.startIndex = NOT_APPLICABLE;
                     $$.endIndex = NOT_APPLICABLE;
                     $$.baseType = NOT_APPLICABLE;
+
+                    switch ($2) {
+                        case LE:
+                            printOpCode(".le.");
+                            break;
+                        case GE:
+                            printOpCode(".ge.");
+                            break;
+                        case EQ:
+                            printOpCode(".eq.");
+                            break;
+                        case NE:
+                            printOpCode(".ne.");
+                            break;
+                        case LT:
+                            printOpCode(".lt.");
+                            break;
+                        case GT:
+                            printOpCode(".gt.");
+                            break;
+                    }
                 }
                 ;
 N_FACTOR        : N_SIGN N_VARIABLE
@@ -323,6 +389,13 @@ N_FACTOR        : N_SIGN N_VARIABLE
                         yyerror("Expression must be of type integer");
                     }
                     assignTypeInfo($$, $2);
+                    stringstream ss;
+                    ss << $2.offset;
+                    printOpCodeDoubleAddr("la", getStr(ss), "0");
+                    printOpCode("deref");
+                    if (strcmp($1, "-") == 0) {
+                        printOpCode("neg");
+                    }
                 }
                 | N_CONST
                 {
@@ -341,6 +414,9 @@ N_FACTOR        : N_SIGN N_VARIABLE
                         yyerror("Expression must be of type boolean");
                     }
                     assignTypeInfo($$, $2);
+                    
+                    stringstream ss;
+                    printOpCode("not");
                 }
                 ;
 N_IDENT         : T_IDENT
@@ -382,7 +458,7 @@ N_IDXVAR        : N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK
                     prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK");
                     //Have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an array was not able to be found)
                     //TypeInfo info = scopeStack.front().findAndGetEntry(string($1));
-                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
                     list<SymbolTable>::iterator it = scopeStack.begin();
                     while (it != scopeStack.end() && info.type == NOT_FOUND) {
                         info = it->findAndGetEntry(string($1));
@@ -435,7 +511,7 @@ N_INTCONST      : N_SIGN T_INTCONST
 N_MULTOP        : N_MULTOP_ARITH 
                 {
                     prRule("N_MULTOP", "N_MULTOP_ARITH");
-                    $$ = ARITHMETIC_OP;
+                    $$ = $1;
                 }
                 | N_MULTOP_LOGIC
                 {
@@ -446,10 +522,12 @@ N_MULTOP        : N_MULTOP_ARITH
 N_MULTOP_ARITH  : T_MULT
                 {
                     prRule("N_MULTOP_ARITH", "T_MULT");
+                    $$ = MULT_OP;
                 }
                 | T_DIV
                 {
                     prRule("N_MULTOP_ARITH", "T_DIV");
+                    $$ = DIV_OP;
                 }
                 ;
 N_MULTOP_LOGIC  : T_AND
@@ -461,10 +539,20 @@ N_MULTOPLST     : /* epsilon */
                 {
                     prRule("N_MULTOPLST", "epsilon");
                 }
-                | N_MULTOP N_FACTOR N_MULTOPLST
+                | N_MULTOP N_FACTOR 
+                {
+                    if ($1 == MULT_OP) {
+                        printOpCode("mult");
+                    } else if ($1 == DIV_OP) {
+                        printOpCode("div");
+                    } else if ($1 == LOGICAL_OP) {
+                        printOpCode("and");
+                    }
+                } 
+                N_MULTOPLST
                 {
                     prRule("N_MULTOPLST", "N_MULTOP N_FACTOR N_MULTOPLST");
-                    if ($1 == ARITHMETIC_OP) {
+                    if ($1 == DIV_OP || $1 == MULT_OP) {
                         if ($2.type != INT) {
                             yyerror("Expression must be of type integer");
                         }
@@ -479,6 +567,11 @@ N_OUTPUT        : N_EXPR
                 {
                     prRule("N_OUTPUT", "N_EXPR");
                     $$ = $1;
+                    if ($1.type == INT) {
+                        printOpCode("iwrite");
+                    } else if ($1.type == CHAR) {
+                        printOpCode("cwrite");
+                    }
                 }
                 ;
 N_OUTPUTLST     : /* epsilon */
@@ -560,11 +653,11 @@ N_PROCSTMT      : N_PROCIDENT
 N_PROG          : N_PROGLBL T_IDENT T_SCOLON
                 {
                     // Print out init line
-                    cout << "init " 
-                         << (globalsLabelNum = genLabelNum()) << ", 20, " 
-                         << (stackLabelNum = genLabelNum()) << ", " 
-                         << (codeLabelNum = genLabelNum()) << ", " 
-                         << (entryPointLabelNum = genLabelNum()) << endl;
+                    cout << "\tinit " 
+                         << "L." << (globalsLabelNum = genLabelNum()) << ", 20, " 
+                         << "L." << (stackLabelNum = genLabelNum()) << ", " 
+                         << "L." << (codeLabelNum = genLabelNum()) << ", " 
+                         << "L." << (entryPointLabelNum = genLabelNum()) << endl;
 
                     // Label for globals allocation
                     printLabel(globalsLabelNum);
@@ -595,26 +688,32 @@ N_READ          : T_READ T_LPAREN N_INPUTVAR N_INPUTLST T_RPAREN
 N_RELOP         : T_LT
                 {
                     prRule("N_RELOP", "T_LT");
+                    $$ = LT;
                 }
                 | T_GT
                 {
                     prRule("N_RELOP", "T_GT");
+                    $$ = GT;
                 }
                 | T_LE
                 {
                     prRule("N_RELOP", "T_LE");
+                    $$ = LE;
                 }
                 | T_GE
                 {
                     prRule("N_RELOP", "T_GE");
+                    $$ = GE;
                 }   
                 | T_EQ
                 {
                     prRule("N_RELOP", "T_EQ");
+                    $$ = EQ;
                 }
                 | T_NE
                 {
                     prRule("N_RELOP", "T_NE");
+                    $$ = NE;
                 }
                 ;
 N_SIGN          : /* epsilon */
@@ -729,6 +828,13 @@ N_VARDEC        : N_IDENT N_IDENTLST T_COLON N_TYPE
                     prRule("N_VARDEC", "N_IDENT N_IDENTLST T_COLON N_TYPE");
                     identList.push_front(string($1));
                     for (list<string>::iterator it = identList.begin(); it != identList.end(); ++it) {
+                        $4.nestingLevel = staticNestingLevel;
+                        if (procStack.empty()) {
+                            $4.offset = 20 + offset;
+                        } else {
+                            $4.offset = offset;
+                        }
+                        nextOffset($4, offset);
                         addToSymbolTable(*it, $4);
                     }
                     identList.clear();
@@ -975,6 +1081,23 @@ string getStr(stringstream& ss) {
     ss.str(string());
     return s;
 }
+
+void nextOffset(const TypeInfo& info, int& offset) {
+    switch (info.type) {
+        case INT:
+        case BOOL:
+        case CHAR:
+            offset++;
+            break;
+        case ARRAY:
+            // distance between indices and then +1 because indices are inclusive
+            offset += abs(info.startIndex - info.endIndex) + 1; 
+            break;
+        default:
+            break;
+    }
+}
+
 
 int main(int argc, char** argv) {
     if (argc < 2) {

@@ -1270,25 +1270,26 @@ YY_RULE_SETUP
 #line 254 "willardorth.l"
 {
 				printTokenInfo("T_CHARCONST", yytext);
+				yylval.text = strdup(yytext);
 				return T_CHARCONST;
 			}
 	YY_BREAK
 case 50:
 /* rule 50 can match eol */
 YY_RULE_SETUP
-#line 258 "willardorth.l"
+#line 259 "willardorth.l"
 {
                 		++lineNum;
             	}
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 261 "willardorth.l"
+#line 262 "willardorth.l"
 { }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 262 "willardorth.l"
+#line 263 "willardorth.l"
 {
 				printTokenInfo("T_UNKNOWN", yytext);
 				return T_UNKNOWN;
@@ -1296,10 +1297,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 267 "willardorth.l"
+#line 268 "willardorth.l"
 ECHO;
 	YY_BREAK
-#line 1303 "lex.yy.c"
+#line 1304 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2296,7 +2297,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 267 "willardorth.l"
+#line 268 "willardorth.l"
 
 
 

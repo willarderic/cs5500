@@ -253,6 +253,7 @@ BADCHARCONST	{QUOTE}|{QUOTE}{QUOTE}
 			}
 {CHARCONST}	{
 				printTokenInfo("T_CHARCONST", yytext);
+				yylval.text = strdup(yytext);
 				return T_CHARCONST;
 			}
 {NEWLINE}   	{

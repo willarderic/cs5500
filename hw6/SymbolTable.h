@@ -22,6 +22,7 @@ struct TypeInfo {
     int nestingLevel;
     int labelNum;
     int frameSize;
+    int offset;
 };
 
 class SymbolTable {
@@ -46,7 +47,7 @@ public:
 
     TypeInfo findAndGetEntry(std::string name) {
         std::unordered_map<std::string, TypeInfo>::iterator found;
-        TypeInfo ret = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+        TypeInfo ret = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
         found = hashTable.find(name);
         if (found != hashTable.end()) {
             ret = found->second;

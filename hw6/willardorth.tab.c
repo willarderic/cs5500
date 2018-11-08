@@ -199,6 +199,7 @@ void printOpCodeSingleAddr(string opCode, string addr);
 void printOpCodeDoubleAddr(string opCode, string addr1, string addr2);
 string getStr(stringstream& ss);
 TypeInfo getFromSymbolTables(string name);
+void nextOffset(const TypeInfo& info, int& offset);
 int yyerror(const char*);
 
 extern "C" {
@@ -218,7 +219,16 @@ extern "C" {
 
 // constants for logical or arithmetic operators for type checking
 #define LOGICAL_OP 100
-#define ARITHMETIC_OP 101
+#define MINUS_OP 101
+#define PLUS_OP 102
+#define MULT_OP 103
+#define DIV_OP 104
+#define EQ 105
+#define NE 106
+#define LT 107
+#define LE 108
+#define GT 109
+#define GE 110
 
 int lineNum = 1; // source line number
 int staticNestingLevel = 1;
@@ -229,6 +239,7 @@ list<string> identList;
 stack<pair<string, TypeInfo> > procStack;
 int globalsLabelNum, stackLabelNum, codeLabelNum, entryPointLabelNum;
 int blockLevel = 0;
+int offset = 0;
 
 
 
@@ -252,14 +263,14 @@ int blockLevel = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 72 "willardorth.y"
+#line 83 "willardorth.y"
 {
     int num;
     char* text;
     TypeInfo typeInfo;
 }
 /* Line 193 of yacc.c.  */
-#line 263 "willardorth.tab.c"
+#line 274 "willardorth.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -272,7 +283,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 276 "willardorth.tab.c"
+#line 287 "willardorth.tab.c"
 
 #ifdef short
 # undef short
@@ -487,16 +498,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  5
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   117
+#define YYLAST   111
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  50
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  61
+#define YYNNTS  65
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  99
+#define YYNRULES  103
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  159
+#define YYNSTATES  163
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
@@ -544,65 +555,67 @@ static const yytype_uint8 yytranslate[] =
 #if YYDEBUG
 /* YYPRHS[YYN] -- Index of the first RHS symbol of rule number YYN in
    YYRHS.  */
-static const yytype_uint8 yyprhs[] =
+static const yytype_uint16 yyprhs[] =
 {
        0,     0,     3,     5,     7,     9,    11,    13,    15,    16,
-      20,    27,    29,    33,    34,    39,    41,    43,    44,    50,
-      54,    57,    62,    64,    66,    68,    70,    72,    76,    79,
-      81,    85,    88,    90,    91,    95,    97,   101,   106,   107,
-     111,   113,   116,   118,   120,   122,   124,   126,   127,   131,
-     133,   134,   138,   139,   143,   147,   148,   152,   154,   156,
-     157,   164,   166,   172,   174,   176,   178,   180,   182,   184,
-     185,   187,   189,   191,   193,   195,   198,   200,   202,   204,
-     206,   208,   210,   212,   213,   217,   219,   222,   224,   226,
-     231,   232,   236,   237,   242,   244,   246,   248,   249,   255
+      17,    22,    29,    31,    32,    37,    38,    39,    45,    47,
+      49,    50,    56,    60,    63,    68,    70,    72,    74,    76,
+      78,    82,    85,    87,    91,    94,    96,    97,   101,   103,
+     107,   112,   113,   117,   119,   122,   124,   126,   128,   130,
+     132,   133,   134,   139,   141,   142,   146,   147,   151,   155,
+     156,   160,   162,   164,   165,   172,   174,   180,   182,   184,
+     186,   188,   190,   192,   193,   195,   197,   199,   201,   203,
+     206,   208,   210,   212,   214,   216,   218,   220,   221,   225,
+     227,   230,   232,   234,   239,   240,   244,   245,   250,   252,
+     254,   256,   257,   263
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      51,     0,    -1,    90,    -1,    53,    -1,    54,    -1,     6,
-      -1,     8,    -1,    37,    -1,    -1,    52,   101,    55,    -1,
-      24,    20,    73,    21,    36,    96,    -1,    67,    -1,   106,
-      12,    68,    -1,    -1,   105,    60,    87,   100,    -1,    41,
-      -1,    32,    -1,    -1,    25,    63,    98,    99,    31,    -1,
-      33,    68,    65,    -1,    48,    98,    -1,    48,    98,    49,
-      98,    -1,    77,    -1,    29,    -1,    61,    -1,   107,    -1,
-      97,    -1,    97,    94,    97,    -1,    95,   106,    -1,    66,
-      -1,     3,    68,     4,    -1,    35,    69,    -1,    42,    -1,
-      -1,     7,    70,    71,    -1,    77,    -1,    72,    10,    72,
-      -1,    57,    20,    68,    21,    -1,    -1,     7,    76,    75,
-      -1,   106,    -1,    95,    30,    -1,    79,    -1,    80,    -1,
-       5,    -1,    28,    -1,    23,    -1,    -1,    78,    69,    81,
-      -1,    68,    -1,    -1,     7,    82,    83,    -1,    -1,    86,
-      85,    59,    -1,    38,    42,    13,    -1,    -1,    84,    13,
-      87,    -1,    42,    -1,    88,    -1,    -1,    92,    42,    13,
-      91,    59,     9,    -1,    39,    -1,    40,     3,    76,    75,
-       4,    -1,    14,    -1,    18,    -1,    15,    -1,    19,    -1,
-      17,    -1,    16,    -1,    -1,     6,    -1,     8,    -1,    34,
-      -1,    27,    -1,    26,    -1,   101,    55,    -1,    58,    -1,
-      89,    -1,    93,    -1,   110,    -1,    64,    -1,   108,    -1,
-      62,    -1,    -1,    13,    98,    99,    -1,    62,    -1,    69,
-      81,    -1,    96,    -1,    56,    -1,    70,    71,    11,   102,
-      -1,    -1,   103,    13,   104,    -1,    -1,    43,   103,    13,
-     104,    -1,    67,    -1,    74,    -1,    42,    -1,    -1,    44,
-      68,   109,    22,    98,    -1,    45,     3,    82,    83,     4,
-      -1
+      51,     0,    -1,    94,    -1,    53,    -1,    54,    -1,     6,
+      -1,     8,    -1,    37,    -1,    -1,    -1,    52,   105,    56,
+      55,    -1,    24,    20,    76,    21,    36,   100,    -1,    70,
+      -1,    -1,   110,    60,    12,    71,    -1,    -1,    -1,   109,
+      62,    91,    63,   104,    -1,    41,    -1,    32,    -1,    -1,
+      25,    66,   102,   103,    31,    -1,    33,    71,    68,    -1,
+      48,   102,    -1,    48,   102,    49,   102,    -1,    80,    -1,
+      29,    -1,    64,    -1,   111,    -1,   101,    -1,   101,    98,
+     101,    -1,    99,   110,    -1,    69,    -1,     3,    71,     4,
+      -1,    35,    72,    -1,    42,    -1,    -1,     7,    73,    74,
+      -1,    80,    -1,    75,    10,    75,    -1,    58,    20,    71,
+      21,    -1,    -1,     7,    79,    78,    -1,   110,    -1,    99,
+      30,    -1,    82,    -1,    83,    -1,     5,    -1,    28,    -1,
+      23,    -1,    -1,    -1,    81,    72,    85,    84,    -1,    71,
+      -1,    -1,     7,    86,    87,    -1,    -1,    90,    89,    61,
+      -1,    38,    42,    13,    -1,    -1,    88,    13,    91,    -1,
+      42,    -1,    92,    -1,    -1,    96,    42,    13,    95,    61,
+       9,    -1,    39,    -1,    40,     3,    79,    78,     4,    -1,
+      14,    -1,    18,    -1,    15,    -1,    19,    -1,    17,    -1,
+      16,    -1,    -1,     6,    -1,     8,    -1,    34,    -1,    27,
+      -1,    26,    -1,   105,    55,    -1,    59,    -1,    93,    -1,
+      97,    -1,   114,    -1,    67,    -1,   112,    -1,    65,    -1,
+      -1,    13,   102,   103,    -1,    65,    -1,    72,    84,    -1,
+     100,    -1,    57,    -1,    73,    74,    11,   106,    -1,    -1,
+     107,    13,   108,    -1,    -1,    43,   107,    13,   108,    -1,
+      70,    -1,    77,    -1,    42,    -1,    -1,    44,    71,   113,
+      22,   102,    -1,    45,     3,    86,    87,     4,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   117,   117,   128,   133,   138,   142,   147,   153,   156,
-     170,   179,   185,   199,   198,   223,   227,   233,   232,   257,
-     262,   266,   271,   279,   287,   296,   302,   307,   319,   327,
-     332,   337,   346,   353,   356,   362,   368,   380,   411,   414,
-     419,   425,   435,   440,   446,   450,   455,   461,   464,   478,
-     485,   488,   494,   493,   505,   520,   523,   528,   536,   561,
-     560,   582,   588,   595,   599,   603,   607,   611,   615,   621,
-     625,   630,   636,   644,   652,   661,   667,   671,   675,   679,
-     683,   687,   691,   697,   700,   705,   710,   716,   721,   727,
-     738,   741,   747,   750,   755,   771,   777,   787,   786,   797
+       0,   128,   128,   139,   144,   149,   154,   160,   166,   170,
+     169,   193,   202,   209,   208,   229,   245,   228,   257,   262,
+     269,   268,   293,   298,   302,   307,   318,   330,   339,   345,
+     350,   384,   399,   404,   409,   421,   428,   431,   437,   443,
+     455,   486,   489,   494,   500,   510,   515,   521,   526,   532,
+     538,   542,   541,   565,   577,   580,   586,   585,   597,   612,
+     615,   620,   628,   653,   652,   674,   680,   687,   692,   697,
+     702,   707,   712,   719,   723,   728,   734,   742,   750,   759,
+     765,   769,   773,   777,   781,   785,   789,   795,   798,   803,
+     808,   814,   819,   825,   843,   846,   852,   855,   860,   876,
+     882,   892,   891,   902
 };
 #endif
 
@@ -619,17 +632,18 @@ static const char *const yytname[] =
   "T_IF", "T_INT", "T_NOT", "T_OF", "T_OR", "T_PROC", "T_PROG", "T_READ",
   "T_TRUE", "T_IDENT", "T_VAR", "T_WHILE", "T_WRITE", "T_UNKNOWN",
   "ST_EOF", "T_THEN", "T_ELSE", "$accept", "N_START", "N_ADDOP",
-  "N_ADDOP_ARITH", "N_ADDOP_LOGIC", "N_ADDOPLST", "N_ARRAY", "N_ARRAYVAR",
-  "N_ASSIGN", "N_BLOCK", "@1", "N_BOOLCONST", "N_COMPOUND", "@2",
-  "N_CONDITION", "N_THEN_PART", "N_CONST", "N_ENTIREVAR", "N_EXPR",
-  "N_FACTOR", "N_IDENT", "N_IDENTLST", "N_IDX", "N_IDXRANGE", "N_IDXVAR",
-  "N_INPUTLST", "N_INPUTVAR", "N_INTCONST", "N_MULTOP", "N_MULTOP_ARITH",
-  "N_MULTOP_LOGIC", "N_MULTOPLST", "N_OUTPUT", "N_OUTPUTLST", "N_PROCDEC",
-  "@3", "N_PROCHDR", "N_PROCDECPART", "N_PROCIDENT", "N_PROCSTMT",
-  "N_PROG", "@4", "N_PROGLBL", "N_READ", "N_RELOP", "N_SIGN", "N_SIMPLE",
-  "N_SIMPLEEXPR", "N_STMT", "N_STMTLST", "N_STMTPART", "N_TERM", "N_TYPE",
-  "N_VARDEC", "N_VARDECLST", "N_VARDECPART", "N_VARIABLE", "N_VARIDENT",
-  "N_WHILE", "@5", "N_WRITE", 0
+  "N_ADDOP_ARITH", "N_ADDOP_LOGIC", "N_ADDOPLST", "@1", "N_ARRAY",
+  "N_ARRAYVAR", "N_ASSIGN", "@2", "N_BLOCK", "@3", "@4", "N_BOOLCONST",
+  "N_COMPOUND", "@5", "N_CONDITION", "N_THEN_PART", "N_CONST",
+  "N_ENTIREVAR", "N_EXPR", "N_FACTOR", "N_IDENT", "N_IDENTLST", "N_IDX",
+  "N_IDXRANGE", "N_IDXVAR", "N_INPUTLST", "N_INPUTVAR", "N_INTCONST",
+  "N_MULTOP", "N_MULTOP_ARITH", "N_MULTOP_LOGIC", "N_MULTOPLST", "@6",
+  "N_OUTPUT", "N_OUTPUTLST", "N_PROCDEC", "@7", "N_PROCHDR",
+  "N_PROCDECPART", "N_PROCIDENT", "N_PROCSTMT", "N_PROG", "@8",
+  "N_PROGLBL", "N_READ", "N_RELOP", "N_SIGN", "N_SIMPLE", "N_SIMPLEEXPR",
+  "N_STMT", "N_STMTLST", "N_STMTPART", "N_TERM", "N_TYPE", "N_VARDEC",
+  "N_VARDECLST", "N_VARDECPART", "N_VARIABLE", "N_VARIDENT", "N_WHILE",
+  "@9", "N_WRITE", 0
 };
 #endif
 
@@ -649,31 +663,33 @@ static const yytype_uint16 yytoknum[] =
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    50,    51,    52,    52,    53,    53,    54,    55,    55,
-      56,    57,    58,    60,    59,    61,    61,    63,    62,    64,
-      65,    65,    66,    66,    66,    67,    68,    68,    69,    69,
-      69,    69,    70,    71,    71,    72,    73,    74,    75,    75,
-      76,    77,    78,    78,    79,    79,    80,    81,    81,    82,
-      83,    83,    85,    84,    86,    87,    87,    88,    89,    91,
-      90,    92,    93,    94,    94,    94,    94,    94,    94,    95,
-      95,    95,    96,    96,    96,    97,    98,    98,    98,    98,
-      98,    98,    98,    99,    99,   100,   101,   102,   102,   103,
-     104,   104,   105,   105,   106,   106,   107,   109,   108,   110
+       0,    50,    51,    52,    52,    53,    53,    54,    55,    56,
+      55,    57,    58,    60,    59,    62,    63,    61,    64,    64,
+      66,    65,    67,    68,    68,    69,    69,    69,    70,    71,
+      71,    72,    72,    72,    72,    73,    74,    74,    75,    76,
+      77,    78,    78,    79,    80,    81,    81,    82,    82,    83,
+      84,    85,    84,    86,    87,    87,    89,    88,    90,    91,
+      91,    92,    93,    95,    94,    96,    97,    98,    98,    98,
+      98,    98,    98,    99,    99,    99,   100,   100,   100,   101,
+     102,   102,   102,   102,   102,   102,   102,   103,   103,   104,
+     105,   106,   106,   107,   108,   108,   109,   109,   110,   110,
+     111,   113,   112,   114
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     1,     1,     1,     1,     1,     1,     0,     3,
-       6,     1,     3,     0,     4,     1,     1,     0,     5,     3,
-       2,     4,     1,     1,     1,     1,     1,     3,     2,     1,
-       3,     2,     1,     0,     3,     1,     3,     4,     0,     3,
-       1,     2,     1,     1,     1,     1,     1,     0,     3,     1,
-       0,     3,     0,     3,     3,     0,     3,     1,     1,     0,
-       6,     1,     5,     1,     1,     1,     1,     1,     1,     0,
-       1,     1,     1,     1,     1,     2,     1,     1,     1,     1,
-       1,     1,     1,     0,     3,     1,     2,     1,     1,     4,
-       0,     3,     0,     4,     1,     1,     1,     0,     5,     5
+       0,     2,     1,     1,     1,     1,     1,     1,     0,     0,
+       4,     6,     1,     0,     4,     0,     0,     5,     1,     1,
+       0,     5,     3,     2,     4,     1,     1,     1,     1,     1,
+       3,     2,     1,     3,     2,     1,     0,     3,     1,     3,
+       4,     0,     3,     1,     2,     1,     1,     1,     1,     1,
+       0,     0,     4,     1,     0,     3,     0,     3,     3,     0,
+       3,     1,     1,     0,     6,     1,     5,     1,     1,     1,
+       1,     1,     1,     0,     1,     1,     1,     1,     1,     2,
+       1,     1,     1,     1,     1,     1,     1,     0,     3,     1,
+       2,     1,     1,     4,     0,     3,     0,     4,     1,     1,
+       1,     0,     5,     5
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -681,128 +697,131 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,    61,     0,     2,     0,     1,     0,    59,    92,     0,
-       0,    13,    32,    33,     0,    60,    55,     0,     0,    90,
-       0,     0,    52,     0,    33,     0,     0,    93,     0,    55,
-      92,    17,    85,    14,    34,     0,    74,    73,    72,    88,
-      87,    89,    90,    54,    56,    53,     0,    69,    91,    69,
-       0,    57,    69,     0,     0,    76,    82,    80,    94,    95,
-      58,    77,    78,    83,     0,    25,    81,    79,    70,    71,
-       0,     0,    35,     0,    69,    23,    16,    69,    15,    24,
-      29,     0,    47,    22,     0,    26,     8,     0,    97,    69,
-      69,     0,     0,    69,    69,     0,    41,     0,    31,     0,
-      19,    44,    46,    45,    69,    42,    43,    86,    96,    28,
-      63,    65,    68,    67,    64,    66,    69,     5,     6,     7,
-      69,     3,     4,    75,    38,    40,     0,    49,    50,     0,
-      83,    18,    12,    36,     0,    30,    20,    47,    27,     8,
-       0,     0,     0,    69,     0,    37,    84,    10,     0,    48,
-       9,    38,    62,    98,    50,    99,    21,    39,    51
+       0,    65,     0,     2,     0,     1,     0,    63,    96,     0,
+       0,    15,    35,    36,     0,    64,    59,     0,     0,    94,
+       0,     0,    56,    16,    36,     0,     0,    97,     0,    59,
+      96,     0,    37,     0,    78,    77,    76,    92,    91,    93,
+      94,    58,    60,    57,    20,    89,    17,    73,    95,     0,
+      74,    75,     0,     0,    38,     0,    73,     0,    61,    73,
+       0,     0,    80,    86,    84,    98,    99,    62,    81,    82,
+      87,    13,    28,    85,    83,    73,     0,    44,    73,    26,
+      19,    73,    18,    27,    32,     0,    50,    25,     0,    29,
+       8,     0,   101,    73,    73,     0,     0,     0,    39,     0,
+       0,    34,     0,    22,    47,    49,    48,    73,    45,    46,
+      90,   100,    31,    67,    69,    72,    71,    68,    70,    73,
+       5,     6,     7,    73,     3,     4,    79,    41,    43,     0,
+      53,    54,     0,    87,    21,    73,    11,    33,    23,    51,
+      30,     9,     0,     0,     0,    73,     0,    40,    88,    14,
+       0,    50,     8,    41,    66,   102,    54,   103,    24,    52,
+      10,    42,    55
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-      -1,     2,   120,   121,   122,   123,    39,    54,    55,    10,
-      16,    79,    56,    46,    57,   100,    80,    58,   127,    82,
-      13,    18,    70,    71,    59,   141,   124,    83,   104,   105,
-     106,   107,   128,   144,    21,    30,    22,    23,    60,    61,
-       3,     8,     4,    62,   116,    84,    40,    85,    63,    92,
-      33,    86,    41,    26,    27,    11,    64,    65,    66,   126,
-      67
+      -1,     2,   123,   124,   125,   126,   152,    37,    61,    62,
+      97,    10,    16,    31,    83,    63,    49,    64,   103,    84,
+      65,   130,    86,    13,    18,    52,    53,    66,   143,   127,
+      87,   107,   108,   109,   110,   151,   131,   146,    21,    30,
+      22,    23,    67,    68,     3,     8,     4,    69,   119,    88,
+      38,    89,    70,    96,    46,    90,    39,    26,    27,    11,
+      71,    72,    73,   129,    74
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -92
+#define YYPACT_NINF -95
 static const yytype_int8 yypact[] =
 {
-     -27,   -92,    13,   -92,   -26,   -92,    15,   -92,   -13,    -4,
-      30,   -92,   -92,    33,    29,   -92,     5,    -4,    34,    -4,
-       7,    43,   -92,    35,    33,    -3,    46,   -92,    49,     5,
-     -13,   -92,   -92,   -92,   -92,    44,   -92,   -92,   -92,   -92,
-     -92,   -92,    -4,   -92,   -92,   -92,    21,    11,   -92,    12,
-      70,    17,    12,    71,    55,   -92,   -92,   -92,    56,   -92,
-     -92,   -92,   -92,    64,    66,   -92,   -92,   -92,   -92,   -92,
-      69,    59,   -92,    51,    12,   -92,   -92,    12,   -92,   -92,
-     -92,    36,     4,   -92,   -20,    53,    -2,    40,   -92,    12,
-      12,    21,    52,    12,    11,    50,   -92,    81,   -92,    21,
-     -92,   -92,   -92,   -92,    12,   -92,   -92,   -92,   -92,   -92,
-     -92,   -92,   -92,   -92,   -92,   -92,    12,   -92,   -92,   -92,
-      12,   -92,   -92,   -92,    80,   -92,    67,   -92,    83,    72,
-      64,   -92,   -92,   -92,    -1,   -92,    39,     4,   -92,    -2,
-      40,    87,    21,    12,    88,   -92,   -92,   -92,    21,   -92,
-     -92,    80,   -92,   -92,    83,   -92,   -92,   -92,   -92
+     -25,   -95,    31,   -95,    -7,   -95,    24,   -95,    -9,     1,
+      36,   -95,   -95,    40,    38,   -95,    11,     1,    42,     1,
+      12,    44,   -95,   -95,    40,    -8,    47,   -95,    49,    11,
+      -9,    30,   -95,    52,   -95,   -95,   -95,   -95,   -95,   -95,
+       1,   -95,   -95,   -95,   -95,   -95,   -95,    21,   -95,    19,
+     -95,   -95,    61,    53,   -95,    43,     7,    72,     5,     7,
+      73,    57,   -95,   -95,   -95,    58,   -95,   -95,   -95,   -95,
+      67,   -95,   -95,   -95,   -95,    21,    45,   -95,     7,   -95,
+     -95,     7,   -95,   -95,   -95,    34,    18,   -95,   -18,    51,
+       3,    41,   -95,     7,     7,    19,    54,    74,   -95,    -6,
+      80,   -95,    19,   -95,   -95,   -95,   -95,     7,   -95,   -95,
+     -95,   -95,   -95,   -95,   -95,   -95,   -95,   -95,   -95,     7,
+     -95,   -95,   -95,     7,   -95,   -95,   -95,    81,   -95,    65,
+     -95,    82,    69,    67,   -95,     7,   -95,   -95,    46,   -95,
+     -95,   -95,    41,    87,    19,     7,    88,   -95,   -95,   -95,
+      19,    18,     3,    81,   -95,   -95,    82,   -95,   -95,   -95,
+     -95,   -95,   -95
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -92,   -92,   -92,   -92,   -92,   -45,   -92,   -92,   -92,    65,
-     -92,   -92,    73,   -92,   -92,   -92,   -92,   -92,   -38,   -70,
-      82,    74,     3,   -92,   -92,   -51,   -39,   -46,   -92,   -92,
-     -92,   -35,   -40,   -50,   -92,   -92,   -92,    76,   -92,   -92,
-     -92,   -92,   -92,   -92,   -92,   -44,   -28,    -9,   -91,   -22,
-     -92,   -11,   -92,   101,    75,   -92,   -82,   -92,   -92,   -92,
-     -92
+     -95,   -95,   -95,   -95,   -95,   -59,   -95,   -95,   -95,   -95,
+     -95,    64,   -95,   -95,   -95,    66,   -95,   -95,   -95,   -95,
+     -95,   -56,   -75,    79,    75,    23,   -95,   -95,   -53,   -41,
+     -45,   -95,   -95,   -95,   -49,   -95,   -40,   -52,   -95,   -95,
+     -95,    77,   -95,   -95,   -95,   -95,   -95,   -95,   -95,   -42,
+       4,   -12,   -94,   -24,   -95,   -15,   -95,   101,    71,   -95,
+     -84,   -95,   -95,   -95,   -95
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
    positive, shift that token.  If negative, reduce the rule which
    number is the opposite.  If zero, do what YYDEFACT says.
    If YYTABLE_NINF, syntax error.  */
-#define YYTABLE_NINF -97
+#define YYTABLE_NINF -101
 static const yytype_int16 yytable[] =
 {
-     130,    72,   109,    73,   117,   125,   118,    98,   136,   101,
-      96,    81,     1,     5,    88,    74,     6,    68,    68,    69,
-      69,    35,   108,    36,    37,    36,    37,   102,     7,   -96,
-       9,    38,   103,    38,   137,   119,    97,   -96,    12,    15,
-      17,    75,    19,    20,    76,    25,    31,    77,    72,    28,
-      73,   153,   129,    78,    49,   132,    29,   156,   125,    42,
-      31,    50,    43,    51,    47,    52,    53,   110,   111,   112,
-     113,   114,   115,    87,    89,    90,   -11,    91,    93,    94,
-      95,    96,   108,   131,    99,   135,   134,   140,   148,   142,
-     143,   152,   155,   145,   150,    45,    32,   133,    34,    24,
-     157,   151,   149,   154,   158,    44,   147,   138,   146,   139,
-      14,     0,     0,     0,     0,     0,     0,    48
+      85,   133,    54,    92,   112,    55,   101,   128,   138,   120,
+      78,   121,    77,    50,     1,    51,    33,  -100,    34,    35,
+      34,    35,   100,   104,   111,  -100,    36,    50,    36,    51,
+      54,     5,   139,    55,     9,     6,    79,     7,   132,    80,
+     122,   105,    81,    12,    44,    15,   106,    17,    82,    20,
+     155,    19,    56,    25,    28,    44,   158,    29,   128,    57,
+      40,    58,    41,    59,    60,   113,   114,   115,   116,   117,
+     118,    75,    47,    77,    76,    91,    93,    94,   -12,   149,
+      95,    99,   102,   111,   137,   134,   135,   144,   142,   145,
+     147,   154,   157,   160,    43,   150,    24,    45,    98,    32,
+     161,   153,   159,   136,   162,   156,    42,   140,   141,   148,
+      14,    48
 };
 
-static const yytype_int16 yycheck[] =
+static const yytype_uint8 yycheck[] =
 {
-      91,    47,    84,    47,     6,    87,     8,    77,    99,     5,
-      30,    49,    39,     0,    52,     3,    42,     6,     6,     8,
-       8,    24,    42,    26,    27,    26,    27,    23,    13,    12,
-      43,    34,    28,    34,   104,    37,    74,    20,    42,     9,
-       7,    29,    13,    38,    32,    11,    25,    35,    94,    42,
-      94,   142,    90,    41,    33,    93,    13,   148,   140,    13,
-      25,    40,    13,    42,    20,    44,    45,    14,    15,    16,
-      17,    18,    19,     3,     3,    20,    20,    13,    12,    10,
-      21,    30,    42,    31,    48,     4,    36,     7,    49,    22,
-       7,     4,     4,    21,   139,    30,    23,    94,    24,    17,
-     151,   140,   137,   143,   154,    29,   134,   116,   130,   120,
-       9,    -1,    -1,    -1,    -1,    -1,    -1,    42
+      56,    95,    47,    59,    88,    47,    81,    91,   102,     6,
+       3,     8,    30,     6,    39,     8,    24,    12,    26,    27,
+      26,    27,    78,     5,    42,    20,    34,     6,    34,     8,
+      75,     0,   107,    75,    43,    42,    29,    13,    94,    32,
+      37,    23,    35,    42,    25,     9,    28,     7,    41,    38,
+     144,    13,    33,    11,    42,    25,   150,    13,   142,    40,
+      13,    42,    13,    44,    45,    14,    15,    16,    17,    18,
+      19,    10,    20,    30,    21,     3,     3,    20,    20,   135,
+      13,    36,    48,    42,     4,    31,    12,    22,     7,     7,
+      21,     4,     4,   152,    30,    49,    17,    31,    75,    24,
+     153,   142,   151,    99,   156,   145,    29,   119,   123,   133,
+       9,    40
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    39,    51,    90,    92,     0,    42,    13,    91,    43,
-      59,   105,    42,    70,   103,     9,    60,     7,    71,    13,
-      38,    84,    86,    87,    70,    11,   103,   104,    42,    13,
-      85,    25,    62,   100,    71,    24,    26,    27,    34,    56,
-      96,   102,    13,    13,    87,    59,    63,    20,   104,    33,
-      40,    42,    44,    45,    57,    58,    62,    64,    67,    74,
-      88,    89,    93,    98,   106,   107,   108,   110,     6,     8,
-      72,    73,    77,    95,     3,    29,    32,    35,    41,    61,
-      66,    68,    69,    77,    95,    97,   101,     3,    68,     3,
-      20,    13,    99,    12,    10,    21,    30,    68,    69,    48,
-      65,     5,    23,    28,    78,    79,    80,    81,    42,   106,
-      14,    15,    16,    17,    18,    19,    94,     6,     8,    37,
-      52,    53,    54,    55,    76,   106,   109,    68,    82,    68,
-      98,    31,    68,    72,    36,     4,    98,    69,    97,   101,
-       7,    75,    22,     7,    83,    21,    99,    96,    49,    81,
-      55,    76,     4,    98,    82,     4,    98,    75,    83
+       0,    39,    51,    94,    96,     0,    42,    13,    95,    43,
+      61,   109,    42,    73,   107,     9,    62,     7,    74,    13,
+      38,    88,    90,    91,    73,    11,   107,   108,    42,    13,
+      89,    63,    74,    24,    26,    27,    34,    57,   100,   106,
+      13,    13,    91,    61,    25,    65,   104,    20,   108,    66,
+       6,     8,    75,    76,    80,    99,    33,    40,    42,    44,
+      45,    58,    59,    65,    67,    70,    77,    92,    93,    97,
+     102,   110,   111,   112,   114,    10,    21,    30,     3,    29,
+      32,    35,    41,    64,    69,    71,    72,    80,    99,   101,
+     105,     3,    71,     3,    20,    13,   103,    60,    75,    36,
+      71,    72,    48,    68,     5,    23,    28,    81,    82,    83,
+      84,    42,   110,    14,    15,    16,    17,    18,    19,    98,
+       6,     8,    37,    52,    53,    54,    55,    79,   110,   113,
+      71,    86,    71,   102,    31,    12,   100,     4,   102,    72,
+     101,   105,     7,    78,    22,     7,    87,    21,   103,    71,
+      49,    85,    56,    79,     4,   102,    86,     4,   102,    84,
+      55,    78,    87
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1617,7 +1636,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 118 "willardorth.y"
+#line 129 "willardorth.y"
     {
                     prRule("N_START", "N_PROG");
                     //printf("\n---- Completed parsing ----\n\n");
@@ -1630,15 +1649,15 @@ yyreduce:
     break;
 
   case 3:
-#line 129 "willardorth.y"
+#line 140 "willardorth.y"
     {
                     prRule("N_ADDOP", "N_ADDOP_ARITH");
-                    (yyval.num) = ARITHMETIC_OP;
+                    (yyval.num) = (yyvsp[(1) - (1)].num);
                 ;}
     break;
 
   case 4:
-#line 134 "willardorth.y"
+#line 145 "willardorth.y"
     {
                     prRule("N_ADDOP", "N_ADDOP_LOGIC");
                     (yyval.num) = LOGICAL_OP;
@@ -1646,51 +1665,66 @@ yyreduce:
     break;
 
   case 5:
-#line 139 "willardorth.y"
+#line 150 "willardorth.y"
     {
                     prRule("N_ADDOP_ARITH", "T_PLUS");
+                    (yyval.num) = PLUS_OP;
                 ;}
     break;
 
   case 6:
-#line 143 "willardorth.y"
+#line 155 "willardorth.y"
     {
                     prRule("N_ADDOP_ARITH", "T_MINUS");
+                    (yyval.num) = MINUS_OP;
                 ;}
     break;
 
   case 7:
-#line 148 "willardorth.y"
+#line 161 "willardorth.y"
     {
                     prRule("N_ADDOP_LOGIC", "T_OR");
                 ;}
     break;
 
   case 8:
-#line 153 "willardorth.y"
+#line 166 "willardorth.y"
     {
                     prRule("N_ADDOPLST", "epsilon");
                 ;}
     break;
 
   case 9:
-#line 157 "willardorth.y"
+#line 170 "willardorth.y"
+    {
+                    if ((yyvsp[(1) - (2)].num) == PLUS_OP) {
+                        printOpCode("add");
+                    } else if ((yyvsp[(1) - (2)].num) == MINUS_OP) {
+                        printOpCode("sub");
+                    } else if ((yyvsp[(1) - (2)].num) == LOGICAL_OP) {
+                        printOpCode("or");
+                    }
+                ;}
+    break;
+
+  case 10:
+#line 180 "willardorth.y"
     {
                     prRule("N_ADDOPLST", "N_ADDOP N_TERM N_ADDOPLST");
-                    if ((yyvsp[(1) - (3)].num) == ARITHMETIC_OP) {
-                        if ((yyvsp[(2) - (3)].typeInfo).type != INT) {
+                    if ((yyvsp[(1) - (4)].num) == PLUS_OP || (yyvsp[(1) - (4)].num) == MINUS_OP) {
+                        if ((yyvsp[(2) - (4)].typeInfo).type != INT) {
                             yyerror("Expression must be of type integer");
                         }
-                    } else if ((yyvsp[(1) - (3)].num) == LOGICAL_OP) {
-                        if ((yyvsp[(2) - (3)].typeInfo).type != BOOL) {
+                    } else if ((yyvsp[(1) - (4)].num) == LOGICAL_OP) {
+                        if ((yyvsp[(2) - (4)].typeInfo).type != BOOL) {
                             yyerror("Expression must be of type boolean");
                         }
                     }
                 ;}
     break;
 
-  case 10:
-#line 171 "willardorth.y"
+  case 11:
+#line 194 "willardorth.y"
     {
                     prRule("N_ARRAY","T_ARRAY T_LBRACK N_IDXRANGE T_RBRACK T_OF N_SIMPLE");
                     (yyval.typeInfo).type = ARRAY;
@@ -1700,32 +1734,43 @@ yyreduce:
                 ;}
     break;
 
-  case 11:
-#line 180 "willardorth.y"
+  case 12:
+#line 203 "willardorth.y"
     {
                     prRule("N_ARRAYVAR", "N_ENTIREVAR");
                     (yyval.text) = (yyvsp[(1) - (1)].text);   
                 ;}
     break;
 
-  case 12:
-#line 186 "willardorth.y"
+  case 13:
+#line 209 "willardorth.y"
     {
-                    if ((yyvsp[(1) - (3)].typeInfo).type == ARRAY)
-                        yyerror("Cannot make assignment to an array");
-                    if ((yyvsp[(1) - (3)].typeInfo).type != (yyvsp[(3) - (3)].typeInfo).type)
-                    {
-                      if ((yyvsp[(1) - (3)].typeInfo).type == PROCEDURE || (yyvsp[(3) - (3)].typeInfo).type == PROCEDURE)
-                          yyerror("Procedure/variable mismatch");
-                      yyerror("Expression must be of same type as variable");
-                    }
-                    prRule("N_ASSIGN", "N_VARIABLE T_ASSIGN N_EXPR");
+                    stringstream ss;
+                    ss << (yyvsp[(1) - (1)].typeInfo).offset << ", " << "0";
+                    printOpCodeSingleAddr("la", getStr(ss));
                 ;}
     break;
 
-  case 13:
-#line 199 "willardorth.y"
+  case 14:
+#line 215 "willardorth.y"
     {
+                    if ((yyvsp[(1) - (4)].typeInfo).type == ARRAY)
+                        yyerror("Cannot make assignment to an array");
+                    if ((yyvsp[(1) - (4)].typeInfo).type != (yyvsp[(4) - (4)].typeInfo).type)
+                    {
+                      if ((yyvsp[(1) - (4)].typeInfo).type == PROCEDURE || (yyvsp[(4) - (4)].typeInfo).type == PROCEDURE)
+                          yyerror("Procedure/variable mismatch");
+                      yyerror("Expression must be of same type as variable");
+                    }
+                    prRule("N_ASSIGN", "N_VARIABLE T_ASSIGN N_EXPR");   
+                    printOpCode("st");
+                ;}
+    break;
+
+  case 15:
+#line 229 "willardorth.y"
+    {
+                    offset = 0;
                     if (procStack.empty()) {
                         stringstream ss;
                         ss << (20 + scopeStack.front().frameSize());
@@ -1741,34 +1786,42 @@ yyreduce:
                 ;}
     break;
 
-  case 14:
-#line 214 "willardorth.y"
+  case 16:
+#line 245 "willardorth.y"
     {
-                    if (scopeStack.size() == 1) {
+                    if (procStack.empty()) {
                         printLabel(entryPointLabelNum);
                     }
+                ;}
+    break;
+
+  case 17:
+#line 251 "willardorth.y"
+    {
                     prRule("N_BLOCK", "N_VARDECPART N_PROCDECPART N_STMTPART");
                     endScope();
 
                 ;}
     break;
 
-  case 15:
-#line 224 "willardorth.y"
+  case 18:
+#line 258 "willardorth.y"
     {
                     prRule("N_BOOLCONST", "T_TRUE");
+                    printOpCodeSingleAddr("lc", "1");
                 ;}
     break;
 
-  case 16:
-#line 228 "willardorth.y"
+  case 19:
+#line 263 "willardorth.y"
     {
                     prRule("N_BOOLCONST", "T_FALSE");
+                    printOpCodeSingleAddr("lc", "0");
                 ;}
     break;
 
-  case 17:
-#line 233 "willardorth.y"
+  case 20:
+#line 269 "willardorth.y"
     {
                     if (!procStack.empty() && blockLevel == 0) {
                         stringstream ss;
@@ -1782,8 +1835,8 @@ yyreduce:
                 ;}
     break;
 
-  case 18:
-#line 245 "willardorth.y"
+  case 21:
+#line 281 "willardorth.y"
     {
                     prRule("N_COMPOUND", "T_BEGIN N_STMT N_STMTLST T_END");
                     blockLevel--;
@@ -1797,51 +1850,58 @@ yyreduce:
                 ;}
     break;
 
-  case 19:
-#line 258 "willardorth.y"
+  case 22:
+#line 294 "willardorth.y"
     {
                     prRule("N_CONDITION", "T_IF N_EXPR T_THEN N_STMT N_ELSE_PART");
                 ;}
     break;
 
-  case 20:
-#line 263 "willardorth.y"
+  case 23:
+#line 299 "willardorth.y"
     {
                     prRule("N_THEN_PART", "T_THEN N_STMT");
                 ;}
     break;
 
-  case 21:
-#line 267 "willardorth.y"
+  case 24:
+#line 303 "willardorth.y"
     {
                     prRule("N_THEN_PART", "T_THEN N_STMT T_ELSE N_STMT");
                 ;}
     break;
 
-  case 22:
-#line 272 "willardorth.y"
+  case 25:
+#line 308 "willardorth.y"
     {
                     prRule("N_CONST", "N_INTCONST");
                     (yyval.typeInfo).type = INT;
                     (yyval.typeInfo).startIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).endIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).baseType = NOT_APPLICABLE;
+                    stringstream ss;
+                    ss << (yyvsp[(1) - (1)].num);
+                    printOpCodeSingleAddr("lc", getStr(ss));
                 ;}
     break;
 
-  case 23:
-#line 280 "willardorth.y"
+  case 26:
+#line 319 "willardorth.y"
     {
                     prRule("N_CONST", "T_CHARCONST");
                     (yyval.typeInfo).type = CHAR;
                     (yyval.typeInfo).startIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).endIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).baseType = NOT_APPLICABLE;
+                    int val = int((yyvsp[(1) - (1)].text)[1]);
+                    stringstream ss;
+                    ss << val;
+                    printOpCodeSingleAddr("lc", getStr(ss));
                 ;}
     break;
 
-  case 24:
-#line 288 "willardorth.y"
+  case 27:
+#line 331 "willardorth.y"
     {
                     prRule("N_CONST", "N_BOOLCONST");
                     (yyval.typeInfo).type = BOOL;
@@ -1851,25 +1911,26 @@ yyreduce:
                 ;}
     break;
 
-  case 25:
-#line 297 "willardorth.y"
+  case 28:
+#line 340 "willardorth.y"
     {
                     prRule("N_ENTIREVAR", "N_VARIDENT");
                     (yyval.text) = (yyvsp[(1) - (1)].text);
                 ;}
     break;
 
-  case 26:
-#line 303 "willardorth.y"
+  case 29:
+#line 346 "willardorth.y"
     {
                     prRule("N_EXPR", "N_SIMPLEEXPR");
                     (yyval.typeInfo) = (yyvsp[(1) - (1)].typeInfo);
                 ;}
     break;
 
-  case 27:
-#line 308 "willardorth.y"
+  case 30:
+#line 351 "willardorth.y"
     {
+
                     prRule("N_EXPR", "N_SIMPLEEXPR N_RELOP N_SIMPLEEXPR");
                     if ((yyvsp[(1) - (3)].typeInfo).type != (yyvsp[(3) - (3)].typeInfo).type) {
                         yyerror("Expressions must both be int, or both char, or both boolean");
@@ -1878,80 +1939,111 @@ yyreduce:
                     (yyval.typeInfo).startIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).endIndex = NOT_APPLICABLE;
                     (yyval.typeInfo).baseType = NOT_APPLICABLE;
+
+                    switch ((yyvsp[(2) - (3)].num)) {
+                        case LE:
+                            printOpCode(".le.");
+                            break;
+                        case GE:
+                            printOpCode(".ge.");
+                            break;
+                        case EQ:
+                            printOpCode(".eq.");
+                            break;
+                        case NE:
+                            printOpCode(".ne.");
+                            break;
+                        case LT:
+                            printOpCode(".lt.");
+                            break;
+                        case GT:
+                            printOpCode(".gt.");
+                            break;
+                    }
                 ;}
     break;
 
-  case 28:
-#line 320 "willardorth.y"
+  case 31:
+#line 385 "willardorth.y"
     {
                     prRule("N_FACTOR", "N_SIGN N_VARIABLE");
                     if (strcmp((yyvsp[(1) - (2)].text), "-") == 0 && (yyvsp[(2) - (2)].typeInfo).type != INT) {
                         yyerror("Expression must be of type integer");
                     }
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(2) - (2)].typeInfo));
+                    stringstream ss;
+                    ss << (yyvsp[(2) - (2)].typeInfo).offset;
+                    printOpCodeDoubleAddr("la", getStr(ss), "0");
+                    printOpCode("deref");
+                    if (strcmp((yyvsp[(1) - (2)].text), "-") == 0) {
+                        printOpCode("neg");
+                    }
                 ;}
     break;
 
-  case 29:
-#line 328 "willardorth.y"
+  case 32:
+#line 400 "willardorth.y"
     {
                     prRule("N_FACTOR", "N_CONST");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(1) - (1)].typeInfo));
                 ;}
     break;
 
-  case 30:
-#line 333 "willardorth.y"
+  case 33:
+#line 405 "willardorth.y"
     {
                     prRule("N_FACTOR", "T_LPAREN N_EXPR T_RPAREN");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(2) - (3)].typeInfo));
                 ;}
     break;
 
-  case 31:
-#line 338 "willardorth.y"
+  case 34:
+#line 410 "willardorth.y"
     {
                     prRule("N_FACTOR", "T_NOT N_FACTOR");
                     if ((yyvsp[(2) - (2)].typeInfo).type != BOOL) {
                         yyerror("Expression must be of type boolean");
                     }
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(2) - (2)].typeInfo));
+                    
+                    stringstream ss;
+                    printOpCode("not");
                 ;}
     break;
 
-  case 32:
-#line 347 "willardorth.y"
+  case 35:
+#line 422 "willardorth.y"
     {
                     prRule("N_IDENT", "T_IDENT");
                     (yyval.text) = (yyvsp[(1) - (1)].text);
                 ;}
     break;
 
-  case 33:
-#line 353 "willardorth.y"
+  case 36:
+#line 428 "willardorth.y"
     {
                     prRule("N_IDENTLST", "epsilon");
                 ;}
     break;
 
-  case 34:
-#line 357 "willardorth.y"
+  case 37:
+#line 432 "willardorth.y"
     {
                     prRule("N_IDENTLST", "T_COMMA N_IDENT N_IDENTLST");
                     identList.push_front(string((yyvsp[(2) - (3)].text)));
                 ;}
     break;
 
-  case 35:
-#line 363 "willardorth.y"
+  case 38:
+#line 438 "willardorth.y"
     {
                     prRule("N_IDX", "N_INTCONST");
                     (yyval.num) = (yyvsp[(1) - (1)].num);
                 ;}
     break;
 
-  case 36:
-#line 369 "willardorth.y"
+  case 39:
+#line 444 "willardorth.y"
     {
                     prRule("N_IDXRANGE", "N_IDX T_DOTDOT N_IDX");
                     if ((yyvsp[(1) - (3)].num) > (yyvsp[(3) - (3)].num)) {
@@ -1964,13 +2056,13 @@ yyreduce:
                 ;}
     break;
 
-  case 37:
-#line 381 "willardorth.y"
+  case 40:
+#line 456 "willardorth.y"
     {
                     prRule("N_IDXVAR", "N_ARRAYVAR T_LBRACK N_EXPR T_RBRACK");
                     //Have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an array was not able to be found)
                     //TypeInfo info = scopeStack.front().findAndGetEntry(string($1));
-                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
+                    TypeInfo info = {NOT_FOUND,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE,NOT_APPLICABLE};
                     list<SymbolTable>::iterator it = scopeStack.begin();
                     while (it != scopeStack.end() && info.type == NOT_FOUND) {
                         info = it->findAndGetEntry(string((yyvsp[(1) - (4)].text)));
@@ -1996,30 +2088,30 @@ yyreduce:
                 ;}
     break;
 
-  case 38:
-#line 411 "willardorth.y"
+  case 41:
+#line 486 "willardorth.y"
     {
                     prRule("N_INPUTLST", "epsilon");
                 ;}
     break;
 
-  case 39:
-#line 415 "willardorth.y"
+  case 42:
+#line 490 "willardorth.y"
     {
                     prRule("N_INPUTLST", "T_COMMA N_INPUTVAR N_INPUTLST");
                 ;}
     break;
 
-  case 40:
-#line 420 "willardorth.y"
+  case 43:
+#line 495 "willardorth.y"
     {
                     prRule("N_INPUTVAR", "N_VARIABLE");
                     (yyval.typeInfo) = (yyvsp[(1) - (1)].typeInfo);
                 ;}
     break;
 
-  case 41:
-#line 426 "willardorth.y"
+  case 44:
+#line 501 "willardorth.y"
     {
                     prRule("N_INTCONST", "N_SIGN T_INTCONST");
                     if (strcmp((yyvsp[(1) - (2)].text), "+") == 0) {
@@ -2030,90 +2122,110 @@ yyreduce:
                 ;}
     break;
 
-  case 42:
-#line 436 "willardorth.y"
+  case 45:
+#line 511 "willardorth.y"
     {
                     prRule("N_MULTOP", "N_MULTOP_ARITH");
-                    (yyval.num) = ARITHMETIC_OP;
+                    (yyval.num) = (yyvsp[(1) - (1)].num);
                 ;}
     break;
 
-  case 43:
-#line 441 "willardorth.y"
+  case 46:
+#line 516 "willardorth.y"
     {
                     prRule("N_MULTOP", "N_MULTOP_LOGIC");
                     (yyval.num) = LOGICAL_OP;
                 ;}
     break;
 
-  case 44:
-#line 447 "willardorth.y"
+  case 47:
+#line 522 "willardorth.y"
     {
                     prRule("N_MULTOP_ARITH", "T_MULT");
+                    (yyval.num) = MULT_OP;
                 ;}
     break;
 
-  case 45:
-#line 451 "willardorth.y"
+  case 48:
+#line 527 "willardorth.y"
     {
                     prRule("N_MULTOP_ARITH", "T_DIV");
+                    (yyval.num) = DIV_OP;
                 ;}
     break;
 
-  case 46:
-#line 456 "willardorth.y"
+  case 49:
+#line 533 "willardorth.y"
     {
                     prRule("N_MULTOP_LOGIC", "T_AND");
                 ;}
     break;
 
-  case 47:
-#line 461 "willardorth.y"
+  case 50:
+#line 538 "willardorth.y"
     {
                     prRule("N_MULTOPLST", "epsilon");
                 ;}
     break;
 
-  case 48:
-#line 465 "willardorth.y"
+  case 51:
+#line 542 "willardorth.y"
+    {
+                    if ((yyvsp[(1) - (2)].num) == MULT_OP) {
+                        printOpCode("mult");
+                    } else if ((yyvsp[(1) - (2)].num) == DIV_OP) {
+                        printOpCode("div");
+                    } else if ((yyvsp[(1) - (2)].num) == LOGICAL_OP) {
+                        printOpCode("and");
+                    }
+                ;}
+    break;
+
+  case 52:
+#line 552 "willardorth.y"
     {
                     prRule("N_MULTOPLST", "N_MULTOP N_FACTOR N_MULTOPLST");
-                    if ((yyvsp[(1) - (3)].num) == ARITHMETIC_OP) {
-                        if ((yyvsp[(2) - (3)].typeInfo).type != INT) {
+                    if ((yyvsp[(1) - (4)].num) == DIV_OP || (yyvsp[(1) - (4)].num) == MULT_OP) {
+                        if ((yyvsp[(2) - (4)].typeInfo).type != INT) {
                             yyerror("Expression must be of type integer");
                         }
-                    } else if ((yyvsp[(1) - (3)].num)  == LOGICAL_OP) {
-                        if ((yyvsp[(2) - (3)].typeInfo).type != BOOL) {
+                    } else if ((yyvsp[(1) - (4)].num)  == LOGICAL_OP) {
+                        if ((yyvsp[(2) - (4)].typeInfo).type != BOOL) {
                             yyerror("Expression must be of type boolean");
                         }
                     }
                 ;}
     break;
 
-  case 49:
-#line 479 "willardorth.y"
+  case 53:
+#line 566 "willardorth.y"
     {
                     prRule("N_OUTPUT", "N_EXPR");
                     (yyval.typeInfo) = (yyvsp[(1) - (1)].typeInfo);
+                    if ((yyvsp[(1) - (1)].typeInfo).type == INT) {
+                        printOpCode("iwrite");
+                    } else if ((yyvsp[(1) - (1)].typeInfo).type == CHAR) {
+                        printOpCode("cwrite");
+                    }
                 ;}
     break;
 
-  case 50:
-#line 485 "willardorth.y"
+  case 54:
+#line 577 "willardorth.y"
     {
                     prRule("N_OUTPUTLST", "epsilon");
                 ;}
     break;
 
-  case 51:
-#line 489 "willardorth.y"
+  case 55:
+#line 581 "willardorth.y"
     {
                     prRule("N_OUTPUTLST", "T_COMMA N_OUTPUT N_OUTPUTLST");
                 ;}
     break;
 
-  case 52:
-#line 494 "willardorth.y"
+  case 56:
+#line 586 "willardorth.y"
     {
                     // when inside the procedures block, the static nesting level is increased
                     staticNestingLevel++;
@@ -2121,16 +2233,16 @@ yyreduce:
                 ;}
     break;
 
-  case 53:
-#line 500 "willardorth.y"
+  case 57:
+#line 592 "willardorth.y"
     {
                     prRule("N_PROCDEC", "N_PROCHDR N_BLOCK");
                     staticNestingLevel--;
                 ;}
     break;
 
-  case 54:
-#line 506 "willardorth.y"
+  case 58:
+#line 598 "willardorth.y"
     {
                         prRule("N_PROCHDR", "T_PROC T_IDENT T_SCOLON");
                         TypeInfo info;
@@ -2145,22 +2257,22 @@ yyreduce:
                     ;}
     break;
 
-  case 55:
-#line 520 "willardorth.y"
+  case 59:
+#line 612 "willardorth.y"
     {
                     prRule("N_PROCDECPART", "epsilon");
                 ;}
     break;
 
-  case 56:
-#line 524 "willardorth.y"
+  case 60:
+#line 616 "willardorth.y"
     {
                     prRule("N_PROCDECPART", "N_PROCDEC T_SCOLON N_PROCDECPART");
                 ;}
     break;
 
-  case 57:
-#line 529 "willardorth.y"
+  case 61:
+#line 621 "willardorth.y"
     {
                     prRule("N_PROCIDENT", "T_IDENT");
                     if (!checkSymbolTables((yyvsp[(1) - (1)].text))) {
@@ -2169,8 +2281,8 @@ yyreduce:
                 ;}
     break;
 
-  case 58:
-#line 537 "willardorth.y"
+  case 62:
+#line 629 "willardorth.y"
     {
                     prRule("N_PROCSTMT", "N_PROCIDENT");
                     TypeInfo info = getFromSymbolTables(string((yyvsp[(1) - (1)].text)));
@@ -2195,15 +2307,15 @@ yyreduce:
                 ;}
     break;
 
-  case 59:
-#line 561 "willardorth.y"
+  case 63:
+#line 653 "willardorth.y"
     {
                     // Print out init line
-                    cout << "init " 
-                         << (globalsLabelNum = genLabelNum()) << ", 20, " 
-                         << (stackLabelNum = genLabelNum()) << ", " 
-                         << (codeLabelNum = genLabelNum()) << ", " 
-                         << (entryPointLabelNum = genLabelNum()) << endl;
+                    cout << "\tinit " 
+                         << "L." << (globalsLabelNum = genLabelNum()) << ", 20, " 
+                         << "L." << (stackLabelNum = genLabelNum()) << ", " 
+                         << "L." << (codeLabelNum = genLabelNum()) << ", " 
+                         << "L." << (entryPointLabelNum = genLabelNum()) << endl;
 
                     // Label for globals allocation
                     printLabel(globalsLabelNum);
@@ -2218,16 +2330,16 @@ yyreduce:
                 ;}
     break;
 
-  case 61:
-#line 583 "willardorth.y"
+  case 65:
+#line 675 "willardorth.y"
     {
                     prRule("N_PROGLBL", "T_PROG");
                     beginScope();
                 ;}
     break;
 
-  case 62:
-#line 589 "willardorth.y"
+  case 66:
+#line 681 "willardorth.y"
     {
                     if ((yyvsp[(3) - (5)].typeInfo).type != INT && (yyvsp[(3) - (5)].typeInfo).type != CHAR)
                       yyerror("Input variable must be of type integer or char");
@@ -2235,74 +2347,80 @@ yyreduce:
                 ;}
     break;
 
-  case 63:
-#line 596 "willardorth.y"
+  case 67:
+#line 688 "willardorth.y"
     {
                     prRule("N_RELOP", "T_LT");
-                ;}
-    break;
-
-  case 64:
-#line 600 "willardorth.y"
-    {
-                    prRule("N_RELOP", "T_GT");
-                ;}
-    break;
-
-  case 65:
-#line 604 "willardorth.y"
-    {
-                    prRule("N_RELOP", "T_LE");
-                ;}
-    break;
-
-  case 66:
-#line 608 "willardorth.y"
-    {
-                    prRule("N_RELOP", "T_GE");
-                ;}
-    break;
-
-  case 67:
-#line 612 "willardorth.y"
-    {
-                    prRule("N_RELOP", "T_EQ");
+                    (yyval.num) = LT;
                 ;}
     break;
 
   case 68:
-#line 616 "willardorth.y"
+#line 693 "willardorth.y"
     {
-                    prRule("N_RELOP", "T_NE");
+                    prRule("N_RELOP", "T_GT");
+                    (yyval.num) = GT;
                 ;}
     break;
 
   case 69:
-#line 621 "willardorth.y"
+#line 698 "willardorth.y"
+    {
+                    prRule("N_RELOP", "T_LE");
+                    (yyval.num) = LE;
+                ;}
+    break;
+
+  case 70:
+#line 703 "willardorth.y"
+    {
+                    prRule("N_RELOP", "T_GE");
+                    (yyval.num) = GE;
+                ;}
+    break;
+
+  case 71:
+#line 708 "willardorth.y"
+    {
+                    prRule("N_RELOP", "T_EQ");
+                    (yyval.num) = EQ;
+                ;}
+    break;
+
+  case 72:
+#line 713 "willardorth.y"
+    {
+                    prRule("N_RELOP", "T_NE");
+                    (yyval.num) = NE;
+                ;}
+    break;
+
+  case 73:
+#line 719 "willardorth.y"
     {
                     prRule("N_SIGN", "epsilon");
                     (yyval.text) = strdup("+");
                 ;}
     break;
 
-  case 70:
-#line 626 "willardorth.y"
+  case 74:
+#line 724 "willardorth.y"
     {
                     prRule("N_SIGN", "T_PLUS");
                     (yyval.text) = (yyvsp[(1) - (1)].text);
                 ;}
     break;
 
-  case 71:
-#line 631 "willardorth.y"
+  case 75:
+#line 729 "willardorth.y"
     {
                     prRule("N_SIGN", "T_MINUS");
                     (yyval.text) = (yyvsp[(1) - (1)].text);
                 ;}
     break;
 
-  case 72:
-#line 637 "willardorth.y"
+  case 76:
+#line 735 "willardorth.y"
     {
                     prRule("N_SIMPLE", "T_INT");
                     (yyval.typeInfo).type = INT;
@@ -2312,8 +2430,8 @@ yyreduce:
                 ;}
     break;
 
-  case 73:
-#line 645 "willardorth.y"
+  case 77:
+#line 743 "willardorth.y"
     {
                     prRule("N_SIMPLE", "T_CHAR");
                     (yyval.typeInfo).type = CHAR;
@@ -2323,8 +2441,8 @@ yyreduce:
                 ;}
     break;
 
-  case 74:
-#line 653 "willardorth.y"
+  case 78:
+#line 751 "willardorth.y"
     {
                     prRule("N_SIMPLE", "T_BOOL");
                     (yyval.typeInfo).type = BOOL;
@@ -2334,150 +2452,157 @@ yyreduce:
                 ;}
     break;
 
-  case 75:
-#line 662 "willardorth.y"
+  case 79:
+#line 760 "willardorth.y"
     {
                     prRule("N_SIMPLEEXPR", "N_TERM N_ADDOPLST");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(1) - (2)].typeInfo));
                 ;}
     break;
 
-  case 76:
-#line 668 "willardorth.y"
+  case 80:
+#line 766 "willardorth.y"
     {
                     prRule("N_STMT", "N_ASSIGN");
                 ;}
     break;
 
-  case 77:
-#line 672 "willardorth.y"
+  case 81:
+#line 770 "willardorth.y"
     {
                     prRule("N_STMT", "N_PROCSTMT");
                 ;}
     break;
 
-  case 78:
-#line 676 "willardorth.y"
+  case 82:
+#line 774 "willardorth.y"
     {
                     prRule("N_STMT", "N_READ");
                 ;}
     break;
 
-  case 79:
-#line 680 "willardorth.y"
+  case 83:
+#line 778 "willardorth.y"
     {
                     prRule("N_STMT", "N_WRITE");
                 ;}
     break;
 
-  case 80:
-#line 684 "willardorth.y"
+  case 84:
+#line 782 "willardorth.y"
     {
                     prRule("N_STMT", "N_CONDITION");
                 ;}
     break;
 
-  case 81:
-#line 688 "willardorth.y"
+  case 85:
+#line 786 "willardorth.y"
     {
                     prRule("N_STMT", "N_WHILE");
                 ;}
     break;
 
-  case 82:
-#line 692 "willardorth.y"
+  case 86:
+#line 790 "willardorth.y"
     {
                     prRule("N_STMT", "N_COMPOUND");
                 ;}
     break;
 
-  case 83:
-#line 697 "willardorth.y"
+  case 87:
+#line 795 "willardorth.y"
     {
                     prRule("N_STMTLST", "epsilon");
                 ;}
     break;
 
-  case 84:
-#line 701 "willardorth.y"
+  case 88:
+#line 799 "willardorth.y"
     {
                     prRule("N_STMTLST", "T_SCOLON N_STMT N_STMTLST");
                 ;}
     break;
 
-  case 85:
-#line 706 "willardorth.y"
+  case 89:
+#line 804 "willardorth.y"
     {
                     prRule("N_STMTPART", "N_COMPOUND");
                 ;}
     break;
 
-  case 86:
-#line 711 "willardorth.y"
+  case 90:
+#line 809 "willardorth.y"
     {
                     prRule("N_TERM", "N_FACTOR N_MULTOPLST");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(1) - (2)].typeInfo));
                 ;}
     break;
 
-  case 87:
-#line 717 "willardorth.y"
+  case 91:
+#line 815 "willardorth.y"
     {
                     prRule("N_TYPE", "N_SIMPLE");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(1) - (1)].typeInfo));
                 ;}
     break;
 
-  case 88:
-#line 722 "willardorth.y"
+  case 92:
+#line 820 "willardorth.y"
     {
                     prRule("N_TYPE", "N_ARRAY");
                     assignTypeInfo((yyval.typeInfo), (yyvsp[(1) - (1)].typeInfo));
                 ;}
     break;
 
-  case 89:
-#line 728 "willardorth.y"
+  case 93:
+#line 826 "willardorth.y"
     {   
                     prRule("N_VARDEC", "N_IDENT N_IDENTLST T_COLON N_TYPE");
                     identList.push_front(string((yyvsp[(1) - (4)].text)));
                     for (list<string>::iterator it = identList.begin(); it != identList.end(); ++it) {
+                        (yyvsp[(4) - (4)].typeInfo).nestingLevel = staticNestingLevel;
+                        if (procStack.empty()) {
+                            (yyvsp[(4) - (4)].typeInfo).offset = 20 + offset;
+                        } else {
+                            (yyvsp[(4) - (4)].typeInfo).offset = offset;
+                        }
+                        nextOffset((yyvsp[(4) - (4)].typeInfo), offset);
                         addToSymbolTable(*it, (yyvsp[(4) - (4)].typeInfo));
                     }
                     identList.clear();
                 ;}
     break;
 
-  case 90:
-#line 738 "willardorth.y"
+  case 94:
+#line 843 "willardorth.y"
     {
                     prRule("N_VARDECLST", "epsilon");
                 ;}
     break;
 
-  case 91:
-#line 742 "willardorth.y"
+  case 95:
+#line 847 "willardorth.y"
     {
                     prRule("N_VARDECLST", "N_VARDEC T_SCOLON N_VARDECLST");
                 ;}
     break;
 
-  case 92:
-#line 747 "willardorth.y"
+  case 96:
+#line 852 "willardorth.y"
     {
                     prRule("N_VARDECPART", "epsilon");
                 ;}
     break;
 
-  case 93:
-#line 751 "willardorth.y"
+  case 97:
+#line 856 "willardorth.y"
     {
                     prRule("N_VARDECPART", "T_VAR N_VARDEC T_SCOLON N_VARDECLST");
                 ;}
     break;
 
-  case 94:
-#line 756 "willardorth.y"
+  case 98:
+#line 861 "willardorth.y"
     {
                     prRule("N_VARIABLE", "N_ENTIREVAR");
                     //Again, have to check the entire stack, not just the front (was leading to a bug in comboNoErrors where an integer couldn't be found)
@@ -2495,16 +2620,16 @@ yyreduce:
                 ;}
     break;
 
-  case 95:
-#line 772 "willardorth.y"
+  case 99:
+#line 877 "willardorth.y"
     {
                     prRule("N_VARIABLE", "N_IDXVAR");
                     (yyval.typeInfo) = (yyvsp[(1) - (1)].typeInfo);
                 ;}
     break;
 
-  case 96:
-#line 778 "willardorth.y"
+  case 100:
+#line 883 "willardorth.y"
     {
                     prRule("N_VARIDENT", "T_IDENT");
                     if (!checkSymbolTables((yyvsp[(1) - (1)].text))) {
@@ -2514,8 +2639,8 @@ yyreduce:
                 ;}
     break;
 
-  case 97:
-#line 787 "willardorth.y"
+  case 101:
+#line 892 "willardorth.y"
     {
                     if ((yyvsp[(2) - (2)].typeInfo).type != BOOL) {
                         yyerror("Expression must be of type boolean");
@@ -2523,15 +2648,15 @@ yyreduce:
                 ;}
     break;
 
-  case 98:
-#line 793 "willardorth.y"
+  case 102:
+#line 898 "willardorth.y"
     {
                     prRule("N_WHILE", "T_WHILE N_EXPR T_DO N_STMT");
                 ;}
     break;
 
-  case 99:
-#line 798 "willardorth.y"
+  case 103:
+#line 903 "willardorth.y"
     {
                     if ((yyvsp[(3) - (5)].typeInfo).type != INT && (yyvsp[(3) - (5)].typeInfo).type != CHAR)
                         yyerror("Output expression must be of type integer or char");
@@ -2541,7 +2666,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 2545 "willardorth.tab.c"
+#line 2670 "willardorth.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2755,7 +2880,7 @@ yyreturn:
 }
 
 
-#line 804 "willardorth.y"
+#line 909 "willardorth.y"
 
 
 #include "lex.yy.c"
@@ -2930,6 +3055,23 @@ string getStr(stringstream& ss) {
     ss.str(string());
     return s;
 }
+
+void nextOffset(const TypeInfo& info, int& offset) {
+    switch (info.type) {
+        case INT:
+        case BOOL:
+        case CHAR:
+            offset++;
+            break;
+        case ARRAY:
+            // distance between indices and then +1 because indices are inclusive
+            offset += abs(info.startIndex - info.endIndex) + 1; 
+            break;
+        default:
+            break;
+    }
+}
+
 
 int main(int argc, char** argv) {
     if (argc < 2) {

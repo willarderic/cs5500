@@ -534,9 +534,6 @@ N_INPUTVAR      : N_VARIABLE
                 {
                     prRule("N_INPUTVAR", "N_VARIABLE");
                     $$ = $1;
-                    stringstream ss;
-                    ss << $1.offset;
-                    printOpCodeDoubleAddr("la", getStr(ss), "0");
                     if ($1.type == INT) {
                         printOpCode("iread");
                     } else if ($1.type == CHAR) {
@@ -922,7 +919,7 @@ N_VARIABLE      : N_ENTIREVAR
                     $$ = info;
 
                     stringstream ss;
-                    ss << info.offset << ", " << "0";
+                    ss << info.offset << ", " << info.nestingLevel - 1;
                     printOpCodeSingleAddr("la", getStr(ss));
                 }
                 | N_IDXVAR

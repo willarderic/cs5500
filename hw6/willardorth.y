@@ -688,6 +688,10 @@ N_PROCSTMT      : N_PROCIDENT
                                 ss << i;
                                 printOpCodeDoubleAddr("pop", getStr(ss), "0");
                             }
+                        } else {
+                            stringstream ss;
+                            ss << "L." << info.labelNum;
+                            printOpCodeSingleAddr("js", getStr(ss));
                         }
                     } else {
                         yyerror("Procedure not found");

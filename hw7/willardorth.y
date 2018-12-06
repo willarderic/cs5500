@@ -485,13 +485,16 @@ N_EXPR          : N_SIMPLEEXPR
                     } 
                 }
                 ;
-N_FACTOR        : N_SIGN N_VARIABLE
+N_FACTOR        : N_SIGN {
+                    printf("\tneg\t%%rax\n");
+                } 
+                N_VARIABLE
                 {
                     prRule("N_FACTOR", "N_SIGN N_VARIABLE");
-                    if (strcmp($1, "-") == 0 && $2.type != INT) {
+                    if (strcmp($1, "-") == 0 && $3.type != INT) {
                         yyerror("Expression must be of type integer");
                     }
-                    assignTypeInfo($$, $2);
+                    assignTypeInfo($$, $3);
                 }
                 | N_CONST
                 {

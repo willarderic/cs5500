@@ -159,6 +159,8 @@ N_START         : N_PROG
                 {
                     prRule("N_START", "N_PROG");
                     
+                    // Claim the memory for the character buffer back from the stack
+                    emitImmediate(ADDQ, 8, RSP);
                     // Assembly code to gracefully shutdown the program
                     emitImmediate(MOVQ, 60, RAX);
                     emitRegister(XOR, RDI, RDI);
@@ -254,6 +256,8 @@ N_BLOCK         :
                         // Initialize base pointer so that we can store variables in it
                         printf("\tpushq\t%%rbp\n");
                         emitRegister(MOVQ, RSP, RBP);
+                        emitImmediate(SUBQ, 8, RSP);
+                        stackOffset++;
                     }
                 }
                 N_VARDECPART
@@ -657,7 +661,13 @@ N_OUTPUT        : N_EXPR
                     prRule("N_OUTPUT", "N_EXPR");
                     $$ = $1;
                     if ($1.type == INT) {
+
                     } else if ($1.type == CHAR) {
+                        emitBaseRelativeReverse(MOVQ, RAX, -8, RBP);
+                        emitBaseRelative(LEA, -8, RBP, RSI);
+                        emitImmediate(MOVQ, 1, RAX);
+                        emitImmediate(MOVQ, 1, RDX);
+                        printf("\tsyscall\n");
                     }
                 }
                 ;
@@ -723,7 +733,7 @@ N_PROCSTMT      : N_PROCIDENT
                     int callerNestingLevel = staticNestingLevel - 1;
                     if (info.type == PROCEDURE) {
                         emitCall(info.label);
-                    } else if (info.type == NOT_FOUND {
+                    } else if (info.type == NOT_FOUND) {
                         yyerror("Procedure not found");
                     } else {
                         yyerror("Cannot call non-procedure");
@@ -1366,6 +1376,7 @@ void printInstruction(Instruction instrx) {
         case JMP:       printf("jmp\t"); break;
         case RET:       printf("ret\t"); break;
         case CALL:      printf("call\t"); break;
+        case LEA:       printf("lea\t"); break;
     }
 }
 

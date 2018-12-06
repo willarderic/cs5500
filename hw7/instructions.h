@@ -23,5 +23,7 @@ enum Instruction {
     JMP,
     // Function
     CALL,
-    RET
+    RET,
+    // For output
+    LEA
 };

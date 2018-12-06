@@ -485,13 +485,16 @@ N_EXPR          : N_SIMPLEEXPR
                     } 
                 }
                 ;
-N_FACTOR        : N_SIGN N_VARIABLE
+N_FACTOR        : N_SIGN {
+                    printf("\tneg\t%%rax\n");
+                } 
+                N_VARIABLE
                 {
                     prRule("N_FACTOR", "N_SIGN N_VARIABLE");
-                    if (strcmp($1, "-") == 0 && $2.type != INT) {
+                    if (strcmp($1, "-") == 0 && $3.type != INT) {
                         yyerror("Expression must be of type integer");
                     }
-                    assignTypeInfo($$, $2);
+                    assignTypeInfo($$, $3);
                 }
                 | N_CONST
                 {
@@ -677,8 +680,8 @@ N_OUTPUT        : N_EXPR
                         printf("\tneg\t %%rax\n");
 
                         // print an integer in rax digit by digit
-                        emitImmediate(MOVQ, 10, RCX);
                         printLabel(loopLabel);
+                        emitImmediate(MOVQ, 10, RCX);
                         emitRegister(XOR, RDX, RDX);
                         printf("\tidivq\t%%rcx\n");
                         printf("\taddq\t$\'0\', %%rdx\n");

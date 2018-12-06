@@ -21,6 +21,7 @@ enum Instruction {
     JG,
     JGE,
     JMP,
+    JNZ,
     // Function
     CALL,
     RET,

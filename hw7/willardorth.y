@@ -661,7 +661,36 @@ N_OUTPUT        : N_EXPR
                     prRule("N_OUTPUT", "N_EXPR");
                     $$ = $1;
                     if ($1.type == INT) {
+                        int loopLabel = genLabelNum();
+                        emitImmediate(CMPQ, 0, RAX);
+                        emitJump(JGE, loopLabel);
 
+                        // Print out a negative sign if the integer is less than 0
+                        emitRegister(MOVQ, RAX, R9);
+                        printf("\tmovq\t$\'-\', -8(%%rbp)\n");
+                        emitBaseRelative(LEA, -8, RBP, RSI);
+                        emitImmediate(MOVQ, 1, RAX);
+                        emitImmediate(MOVQ, 1, RDX);
+                        printf("\tsyscall\n");
+                        emitRegister(MOVQ, R9, RAX);
+                        // negate the number 
+                        printf("\tneg\t %%rax");
+
+                        // print an integer in rax digit by digit
+                        emitImmediate(MOVQ, 10, RCX);
+                        printLabel(loopLabel);
+                        emitRegister(XOR, RDX, RDX);
+                        printf("\tidivq\t%%rcx\n");
+                        printf("\taddq\t$\'0\', %%rdx\n");
+                        emitBaseRelativeReverse(MOVQ, RDX, -8, RBP);
+                        emitBaseRelative(LEA, -8, RBP, RSI);
+                        emitRegister(MOVQ, RAX, R9);
+                        emitImmediate(MOVQ, 1, RAX);
+                        emitImmediate(MOVQ, 1, RDX);
+                        printf("\tsyscall\n");
+                        emitRegister(MOVQ, R9, RAX);
+                        emitImmediate(CMPQ, 0, RAX);
+                        emitJump(JNZ, loopLabel);
                     } else if ($1.type == CHAR) {
                         emitBaseRelativeReverse(MOVQ, RAX, -8, RBP);
                         emitBaseRelative(LEA, -8, RBP, RSI);
@@ -1377,6 +1406,7 @@ void printInstruction(Instruction instrx) {
         case RET:       printf("ret\t"); break;
         case CALL:      printf("call\t"); break;
         case LEA:       printf("lea\t"); break;
+        case JNZ:       printf("jnz\t"); break;
     }
 }
 

@@ -677,8 +677,8 @@ N_OUTPUT        : N_EXPR
                         printf("\tneg\t %%rax\n");
 
                         // print an integer in rax digit by digit
-                        emitImmediate(MOVQ, 10, RCX);
                         printLabel(loopLabel);
+                        emitImmediate(MOVQ, 10, RCX);
                         emitRegister(XOR, RDX, RDX);
                         printf("\tidivq\t%%rcx\n");
                         printf("\taddq\t$\'0\', %%rdx\n");

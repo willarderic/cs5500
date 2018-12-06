@@ -674,7 +674,7 @@ N_OUTPUT        : N_EXPR
                         printf("\tsyscall\n");
                         emitRegister(MOVQ, R9, RAX);
                         // negate the number 
-                        printf("\tneg\t %%rax");
+                        printf("\tneg\t %%rax\n");
 
                         // print an integer in rax digit by digit
                         emitImmediate(MOVQ, 10, RCX);

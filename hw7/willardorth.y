@@ -455,6 +455,9 @@ N_EXPR          : N_SIMPLEEXPR
                             case GT:
                                 emitJump(JLE, whileLabelPairs.top().second);
                                 break;
+			    default:
+			    	emitJump(JZ, whileLabelPairs.top().second);
+				break;
                         }
                         inWhile = false;
                     }
@@ -480,6 +483,9 @@ N_EXPR          : N_SIMPLEEXPR
                             case GT:
                                 emitJump(JLE, elseLabelNum.top());
                                 break;
+			    default:
+			    	emitJump(JZ, elseLabelNum.top());
+				break;
                         }
                         inIf = false;
                     } 
@@ -691,8 +697,18 @@ N_OUTPUT        : N_EXPR
                         emitRegister(MOVQ, R9, RAX);
                         emitImmediate(CMPQ, 0, RAX);
                         emitJump(JNZ, loopLabel);
+			printf("\tmovq\t$\'\\n\', -8(%%rbp)\n");
+                        emitBaseRelative(LEA, -8, RBP, RSI);
+                        emitImmediate(MOVQ, 1, RAX);
+                        emitImmediate(MOVQ, 1, RDX);
+                        printf("\tsyscall\n");
                     } else if ($1.type == CHAR) {
                         emitBaseRelativeReverse(MOVQ, RAX, -8, RBP);
+                        emitBaseRelative(LEA, -8, RBP, RSI);
+                        emitImmediate(MOVQ, 1, RAX);
+                        emitImmediate(MOVQ, 1, RDX);
+                        printf("\tsyscall\n");
+			printf("\tmovq\t$\'\\n\', -8(%%rbp)\n");
                         emitBaseRelative(LEA, -8, RBP, RSI);
                         emitImmediate(MOVQ, 1, RAX);
                         emitImmediate(MOVQ, 1, RDX);
@@ -1407,6 +1423,7 @@ void printInstruction(Instruction instrx) {
         case CALL:      printf("call\t"); break;
         case LEA:       printf("lea\t"); break;
         case JNZ:       printf("jnz\t"); break;
+    	case JZ:	printf("jz\t"); break;
     }
 }
 

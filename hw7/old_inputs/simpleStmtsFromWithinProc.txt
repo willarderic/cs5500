@@ -12,7 +12,7 @@ var a : integer;
   end;
 
 begin
-  a := 1;
+  a := 100;
   write(a)
 end.
 

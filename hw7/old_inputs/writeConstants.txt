@@ -2,6 +2,6 @@ program p;
 begin
   write(5);
   write('!');
-  write(-2,'\')
+  write(-42,'\')
 end.
 

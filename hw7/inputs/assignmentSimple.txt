@@ -6,7 +6,7 @@ var x,y : integer;
 begin
   ch := 'A';
   b := false;
-  y := -123;
+  y := -9;
   x := y;
   write(ch,y,x)
 end.

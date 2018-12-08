@@ -1,0 +1,10 @@
+program p;
+
+begin
+  if true 
+    then if false then write('3')
+                  else if false then write('2')
+                                else write('1');
+  write('\')
+end.
+

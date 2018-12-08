@@ -1,9 +1,8 @@
 program p;
 var x : integer;
-
 begin
-  x := 99;
-  if x > 10 then write(x);
-  write('\')
+x := 2;
+if x > 1 
+	then write('1');
+write('0')
 end.
-

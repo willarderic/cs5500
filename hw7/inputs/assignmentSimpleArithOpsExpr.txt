@@ -6,6 +6,9 @@ begin
   x := 3;
   y := 2;
   z := y * x;
-  write(x, y, 'x', '*', 'y', '=', z)
+  x := z div y;
+  y := z - 1;
+  z := 2 + 2;
+  write(x, y, z)
 end.
 
